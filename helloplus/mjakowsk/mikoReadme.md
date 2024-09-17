@@ -15,3 +15,8 @@ localhost:8000/polls/
 
 You should get the following message:
 Hello, you have successfully connected to the server!
+
+
+
+This technology can be used in our project to test sendind internet connections and web technology
+
