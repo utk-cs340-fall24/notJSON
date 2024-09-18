@@ -1,0 +1,3 @@
+# READ ME
+## webserver.c
+Groundworks for a c-created server. This program briefly shows the contents of index.html on localhost:8080 before closing the program. Currently a WIP, as the server runs as long as the send() lasts. Usage: download tww489 file, compile using "gcc webserver.c -l Ws2_32 -o webserver", and run via ./webserver. Open a tab on google chrome or mozilla firefox, and type "localhost:8080". Program will close after briefly displaying the contents of index.html.
