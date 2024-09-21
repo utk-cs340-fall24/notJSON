@@ -10,15 +10,21 @@
                             <xs:element name="message" maxOccurs="unbounded">
                                 <xs:complexType>
                                     <xs:sequence>
-                                        <xs:element name="field" maxOccurs="unbounded">
+                                        <xs:element name="fields">
                                             <xs:complexType>
-                                                <xs:simpleContent>
-                                                    <xs:extension base="xs:string">
-                                                        <xs:attribute name="type" use="required" type="xs:string"/>
-                                                        <xs:attribute name="required" type="xs:boolean" use="optional"/>
-                                                        <xs:attribute name="default" type="xs:string" use="optional"/>
-                                                    </xs:extension>
-                                                </xs:simpleContent>
+                                                <xs:sequence>
+                                                    <xs:element name="field" maxOccurs="unbounded">
+                                                        <xs:complexType>
+                                                            <xs:simpleContent>
+                                                                <xs:extension base="xs:string">
+                                                                    <xs:attribute name="type" type="xs:string" use="required"/>
+                                                                    <xs:attribute name="required" type="xs:boolean" use="optional"/>
+                                                                    <xs:attribute name="default" type="xs:string" use="optional"/>
+                                                                </xs:extension>
+                                                            </xs:simpleContent>
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                </xs:sequence>
                                             </xs:complexType>
                                         </xs:element>
                                     </xs:sequence>
@@ -28,6 +34,7 @@
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
+
                 <xs:element name="procedures">
                     <xs:complexType>
                         <xs:sequence>
@@ -42,7 +49,7 @@
                                                         <xs:complexType>
                                                             <xs:simpleContent>
                                                                 <xs:extension base="xs:string">
-                                                                    <xs:attribute name="type" use="required" type="xs:string"/>
+                                                                    <xs:attribute name="type" type="xs:string" use="required"/>
                                                                     <xs:attribute name="required" type="xs:boolean" use="optional"/>
                                                                 </xs:extension>
                                                             </xs:simpleContent>
@@ -58,7 +65,7 @@
                                                         <xs:complexType>
                                                             <xs:simpleContent>
                                                                 <xs:extension base="xs:string">
-                                                                    <xs:attribute name="type" use="required" type="xs:string"/>
+                                                                    <xs:attribute name="type" type="xs:string" use="required"/>
                                                                 </xs:extension>
                                                             </xs:simpleContent>
                                                         </xs:complexType>
