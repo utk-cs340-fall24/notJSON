@@ -1,19 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <schema version="1.0.0">
   <messages>
     <message name="reaction">
-      <field type="string" required="true">emoji</field>
-      <field type="i32" default="0">count</field>
+      <fields>
+        <field type="string" required="true">emoji</field>
+        <field type="i32" default="0">count</field>
+      </fields>
     </message>
     <message name="chat_message">
-      <field type="string" required="true">author</field>
-      <field type="timestamp" required="true">message_sent</field>
-      <field type="i32">likes</field>
-      <field type="string" required="true">body</field>
-      <field type="reaction[]">reactions</field>
+      <fields>
+        <field type="string" required="true">author</field>
+        <field type="timestamp" required="true">message_sent</field>
+        <field type="i32">likes</field>
+        <field type="string" required="true">body</field>
+        <field type="reaction[]">reactions</field>
+      </fields>
     </message>
   </messages>
   <procedures>
-    <procedure name = "send_message">
+    <procedure name="send_message">
       <description>
         Submits a new chat message along with the users authentication token.
       </description>
@@ -25,9 +30,10 @@
         <field type="boolean">success</field>
       </returns>
     </procedure>
-    <procedure name = "get_messages">
+    <procedure name="get_messages">
       <description>
-        Get the latest `Count` messages from the server, requires a users authentication token.
+        Get the latest `Count` messages from the server, requires a users
+        authentication token.
         `Count` defaults to 10 messages.
       </description>
       <parameters>
