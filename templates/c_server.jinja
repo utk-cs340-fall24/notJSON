@@ -1,0 +1,8 @@
+{%- for message in messages -%}
+  typedef struct {{ message['@name'] }} {
+  {% for field in message['fields']['field'] %}
+    {{ field['@type'] }} {{ field['#text'] }};
+  {% endfor %}
+} {{message['@name']}};
+
+{% endfor %}
