@@ -1,21 +1,23 @@
 #!/usr/bin/env python3
 
-import xmltodict
-import 
+import xmltodict 
 from typing import Any, Dict, List
+from jinja2 import Environment, FileSystemLoader
+from typing import Any
+from dataclasses import dataclass
+
+@dataclass
+class Field:
+    required: bool
+    default_val: str
+    type_field: str
+    name: str
 
 @dataclass
 class Message:
     name: str
     base_size: int
     fields: list[Field]
-
-#parsing the xml content
-with open('example.schemafile', 'r') as file:
-    content: str = file.read()
-    parsed_xml: Any = xmltodict.parse(content)
-    #dict = xmltodict.parse(content)
-    #print(dict)
 
 #extract messages
 def extract_messages(parsed_xml):
@@ -26,14 +28,16 @@ def extract_messages(parsed_xml):
         message_name = message['@name']  #extract message name
 
         field_names = []
-        fields = message['field']
+        fields = message['fields']['field']
         #checking if fields is a list or a single field
         if isinstance(fields, list):
             for field in fields:
                 field_names.append(field['#text']) 
         else:
             field_names.append(fields['#text'])  #for single field case
-    
+        
+        #do something similar to this, grap type and default value instead
+
         message_data[message_name] = field_names
         print("field_names:\n") 
         print(field_names)
@@ -74,12 +78,40 @@ def extract_procedures(parsed_xml: Any) -> Dict[str, Dict[str, List[str]]]:
     return procedure_data
 
 #examples of usage:
-message_data = extract_messages(parsed_xml)
-procedure_data = extract_procedures(parsed_xml)
+#message_data = extract_messages(parsed_xml)
+#procedure_data = extract_procedures(parsed_xml)
 
-print("Messages:\n")
-print(message_data)
+#print("Messages:\n")
+#print(message_data)
 
-print("\nProcedures:\n")
-print(procedure_data)
-        
+#print("\nProcedures:\n")
+#print(procedure_data)
+
+#parsing the xml content
+with open('example.schemafile', 'r') as file:
+    content: str = file.read()
+    parsed_xml: Any = xmltodict.parse(content)
+    
+    messages = parsed_xml['schema']['messages']
+
+    environment = Environment(loader=FileSystemLoader("templates/"))
+    environment.trim_blocks = True
+    environment.lstrip_blocks = True
+    environment.keep_trailing_newline = True
+
+    message_data = extract_messages(parsed_xml);
+    procedure_data = extract_procedures(parsed_xml)
+
+    print("Messages:\n")
+    print(message_data)
+
+    print("\nProcedures:\n")
+    print(procedure_data)
+
+    template = environment.get_template("c_server.jinja")
+    context = {
+        "messages": messages["message"]
+    }
+
+    print(template.render(context))
+
