@@ -3,7 +3,14 @@
 import xmltodict
 from jinja2 import Environment, FileSystemLoader
 from typing import Any
+from dataclasses import dataclass
 
+@dataclass
+class Field:
+    required: bool
+    default_val: str
+    type_field: str
+    name: str
 
 with open('example.schemafile', 'r') as file:
     content: str = file.read()
