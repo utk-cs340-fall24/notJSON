@@ -150,18 +150,17 @@ with open('example.schemafile', 'r') as file:
     message_data = extract_messages(parsed_xml);
     procedure_data = extract_procedures(parsed_xml)
 
-    # some print statements to test correct input and parsing:
-    print("----------\nMessages:\n")
+    print("Messages:\n")
     for message in message_data:
         print(message)
         print("\n")
 
-    print("----------\nProcedures:\n")
+    print("-----\nProcedures:\n")
     for procedure in procedure_data:
         print(procedure)
         print("\n")
 
-    print("----------\n")
+    print("-----\n")
 
     template = environment.get_template("c_server.jinja")
     context = {
