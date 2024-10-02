@@ -5,6 +5,24 @@ from typing import Any, Dict, List
 from jinja2 import Environment, FileSystemLoader
 from typing import Any
 from dataclasses import dataclass
+from enum import Enum
+
+# Creates a mapping of typename to type size
+class Primitive(Enum):
+    NJ_STRING = 8
+    NJ_I64 = 8
+    NJ_U64 = 8
+    NJ_I32 = 4
+    NJ_U32 = 4
+    NJ_I16 = 2
+    NJ_U16 = 2
+    NJ_I8 = 1
+    NJ_U8 = 1
+    NJ_CHAR = 1
+    NJ_DOUBLE = 8
+    NJ_FLOAT = 4
+    NJ_TIMESTAMP = 8
+    NJ_BOOLEAN = 1
 
 @dataclass
 class Field:
