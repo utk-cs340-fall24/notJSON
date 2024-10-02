@@ -1,19 +1,10 @@
-#include <netinet/in.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <unistd.h>
-#include <fcntl.h>
+#include "../inc/server.h"
 
-#define PORT 8080
 
 int main(int argc, char* argv[]) {
     int clientSocket = socket(AF_INET, SOCK_STREAM, 0);
-    struct sockaddr_in address;
-    address.sin_family = AF_INET;
-    address.sin_addr.s_addr = INADDR_ANY;
-    address.sin_port = htons(PORT);
+    struct sockaddr_in address = new_addr(&clientSocket);
+
     socklen_t lenAddr = sizeof(address);
 
 
@@ -23,15 +14,21 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-    address.sin_family = AF_INET;
-    address.sin_addr.s_addr = INADDR_ANY;
-    address.sin_port = htons(PORT);
+
 
     int connectStatus = connect(clientSocket, (struct sockaddr*)&address, lenAddr);
     if (connectStatus== -1) {
         perror("Unable to Connect to Server");
         return -1;
     }
+    if (inet_pton(AF_INET, "127.0.0.1", &address.sin_addr)
+        <= 0) {
+        printf(
+            "\nInvalid address/ Address not supported \n");
+        return -1;
+    }
+
+
     else {
         char * ServerMessage = "Hello, From Client";
         char recBuf[1000];
@@ -39,7 +36,7 @@ int main(int argc, char* argv[]) {
         printf("Client: Message Sent \n");
         //recv(clientSocket, ServerMessage, sizeof(ServerMessage), 0);
         read(clientSocket, recBuf, sizeof(recBuf)-1);
-        printf("Message Received. Message: %s\n", recBuf);
+        printf("Message Received. Message: %s\n",  recBuf);
 
 
         close(clientSocket);

@@ -1,4 +1,4 @@
 #!/bin/bash
 
-gcc -o bin/serverTest src/serverTest.c
-gcc -o bin/clientTest src/clientTest.c
+gcc -o bin/test src/serverTest.c lib/server.c 
+gcc -o bin/clientTest src/clientTest.c lib/server.c 

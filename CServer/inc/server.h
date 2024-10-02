@@ -8,4 +8,4 @@
 
 #define PORT 8080
 
-struct sockaddr_in new_server_socket();
+struct sockaddr_in new_addr(int *socketfd);

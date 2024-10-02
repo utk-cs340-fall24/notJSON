@@ -1,14 +1,6 @@
 // Note: Run/written on Linux Via WSL
 
-#include <netinet/in.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <unistd.h>
-#include <fcntl.h>
-
-#define PORT 8080
+#include "../inc/server.h"
 
 int main(int argc, char * argv[]) {
     if (argc != 2) {
@@ -18,9 +10,8 @@ int main(int argc, char * argv[]) {
     int fd = 0;
     int serverSocket;
     int opt = 1;
-    struct sockaddr_in  address;
+    struct sockaddr_in  address = new_addr(&serverSocket);
     socklen_t lenAddr = sizeof(address);
-    
     // fd = open(argv[1], O_RDONLY);
     char * file  = (char *)malloc(sizeof(char) * sizeof(argv[1]));
     file = argv[1];
@@ -42,14 +33,14 @@ int main(int argc, char * argv[]) {
         return -1;
     }
 
-    address.sin_family = AF_INET;
-    address.sin_addr.s_addr = INADDR_ANY;
-    address.sin_port = htons(PORT);
+    // TODO: Cooldown on running server on same port after a former run, resolve
+    setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
     bind(serverSocket, (struct sockaddr *)&address, lenAddr);
 
     listen(serverSocket, 100);
     // printf("%s", buf);
+    
     int clientSocket = accept(serverSocket, (struct sockaddr *)&address, &lenAddr);
     if (clientSocket < 0) {
         perror("Error Connecting");
@@ -59,7 +50,7 @@ int main(int argc, char * argv[]) {
 
     char * testBuf = "Hello, From Server";
     char recBuf[1000];
-    read(clientSocket, recBuf, sizeof(recBuf))-1;
+    read(clientSocket, recBuf, sizeof(recBuf)-1);
     printf("Server: Message Received. Message : %s\n", recBuf);
     
     send(clientSocket, testBuf, strlen(testBuf), 0);

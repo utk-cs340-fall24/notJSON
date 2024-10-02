@@ -3,4 +3,12 @@
 #define PORT 8080
 
 
-sock_
+struct sockaddr_in new_addr(int *socketfd) {
+    struct sockaddr_in address;
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(PORT);
+
+
+    return address;
+}
