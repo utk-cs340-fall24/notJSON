@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
-import xmltodict 
+import xmltodict
+import argparse
 from typing import Any, Dict, List
 from jinja2 import Environment, FileSystemLoader
 from typing import Any
@@ -45,7 +46,7 @@ class Procedure:
     return_values: list[Field]
 
 #extract messages
-def extract_messages(parsed_xml):
+def extract_messages(parsed_xml) -> List[Message]:
     messages = parsed_xml['schema']['messages']['message']
     message_data = []
 
@@ -64,8 +65,8 @@ def extract_messages(parsed_xml):
                     type_field = field['@type'],
                     name = field['#text']
                 )
+                field_names.append(field_object)
 
-            field_names.append(field_object) 
         #running for a single field case so for loop isn't executed when unecessary
         else:
             field_object = Field(
@@ -74,7 +75,6 @@ def extract_messages(parsed_xml):
                 type_field = fields['@type'],
                 name = fields['#text']
             )
-
             #do something similar to this, grap type and default value instead
             field_names.append(field_object)
         
@@ -83,7 +83,7 @@ def extract_messages(parsed_xml):
     return message_data
 
 #extract procedures
-def extract_procedures(parsed_xml: Any) -> Dict[str, Dict[str, List[str]]]:
+def extract_procedures(parsed_xml: Any) -> List[Procedure]:
     procedures = parsed_xml['schema']['procedures']['procedure']
     procedure_data = []
 
@@ -148,14 +148,21 @@ def extract_procedures(parsed_xml: Any) -> Dict[str, Dict[str, List[str]]]:
     
     return procedure_data
 
-#parsing the xml content
-with open('example.schemafile', 'r') as file:
-    content: str = file.read()
-    parsed_xml: Any = xmltodict.parse(content)
-    
-    messages = parsed_xml['schema']['messages']
+def read_file(filename: str):
+    with open(filename, 'r') as file:
+        content: str = file.read()
+    return content
 
-    environment = Environment(loader=FileSystemLoader("templates/"))
+def write_file(filename: str, contents: str):
+    with open(filename, 'w') as file:
+        file.write(contents)
+
+def main(schemafile: str, template_file: str, output_file: str):
+    #parsing the xml content
+    content: str = read_file(schemafile)
+    parsed_xml: Any = xmltodict.parse(content)
+
+    environment = Environment(loader=FileSystemLoader("."))
     environment.trim_blocks = True
     environment.lstrip_blocks = True
     environment.keep_trailing_newline = True
@@ -163,23 +170,26 @@ with open('example.schemafile', 'r') as file:
     message_data = extract_messages(parsed_xml);
     procedure_data = extract_procedures(parsed_xml)
 
-    # some print statements to test correct input and parsing:
-    print("----------\nMessages:\n")
-    for message in message_data:
-        print(message)
-        print("\n")
-
-    print("----------\nProcedures:\n")
-    for procedure in procedure_data:
-        print(procedure)
-        print("\n")
-
-    print("----------\n")
-
-    template = environment.get_template("c_server.jinja")
+    template = environment.get_template(template_file)
     context = {
-        "messages": messages["message"]
+        "messages": message_data
     }
 
-    print(template.render(context))
+    output: str = template.render(context)
+    write_file(output_file, output)
 
+
+
+if __name__ == '__main__':
+    parser: argparse.ArgumentParser = argparse.ArgumentParser(
+        prog='notJSON',
+        description='A CLI Tool to generate clients/servers for notJSON schemas',
+    )
+
+    parser.add_argument('schemafile', help='Your input schemafile, should end in `.schemafile`')
+    parser.add_argument('template', help='Your output Jinja Template, should end in `.jinja`')
+    parser.add_argument('outputfile', help='The destination file notJSON should write to, file extension should match generated source file')
+
+    args = parser.parse_args()
+
+    main(args.schemafile, args.template, args.outputfile)
