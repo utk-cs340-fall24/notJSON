@@ -29,7 +29,6 @@ class Procedure:
 #extract messages
 def extract_messages(parsed_xml):
     messages = parsed_xml['schema']['messages']['message']
-    #message_data = {};
     message_data = []
 
     for message in messages:
@@ -48,8 +47,9 @@ def extract_messages(parsed_xml):
                     name = field['#text']
                 )
 
-                field_names.append(field_object) 
-        else:   #running for a single field case so for loop isn't executed when unecessary
+            field_names.append(field_object) 
+        #running for a single field case so for loop isn't executed when unecessary
+        else:
             field_object = Field(
                 required = fields.get('@required', 'false') == 'true',
                 default_val = fields.get('@default', ''),
@@ -57,14 +57,9 @@ def extract_messages(parsed_xml):
                 name = fields['#text']
             )
 
+            #do something similar to this, grap type and default value instead
             field_names.append(field_object)
         
-        #do something similar to this, grap type and default value instead
-        
-        #instead of the following:
-        #message_data[message_name] = field_names
-        
-        #do the following:
         message_data.append(Message(name = message_name, base_size = 0, fields = field_names))
 
     return message_data
