@@ -1,5 +1,6 @@
 #include "../inc/server.h"
-
+// Client Program
+// Connects to a server, sending a hello message
 
 int main(int argc, char* argv[]) {
     int clientSocket = socket(AF_INET, SOCK_STREAM, 0);
@@ -7,8 +8,6 @@ int main(int argc, char* argv[]) {
 
     socklen_t lenAddr = sizeof(address);
 
-
-    clientSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (clientSocket  < 0) {
         perror("Unable to create socket");
         return -1;

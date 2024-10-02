@@ -1,4 +1,7 @@
 // Note: Run/written on Linux Via WSL
+// Server Program
+// Allows a client to connect, receiving a hello message, and sending it back
+
 
 #include "../inc/server.h"
 
