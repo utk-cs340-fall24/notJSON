@@ -1,0 +1,153 @@
+script.py commits:
+
+for issues 2 and 3:
+
+@dataclass
+class Field:
+    required: bool
+    default_val: str
+    type_field: str
+    name: str
+    array: bool = False
+
+@dataclass
+class Message:
+    name: str
+    base_size: int
+    fields: list[Field]
+
+@dataclass
+class Procedure:
+    name: str
+    description: str
+    parameters: list[Field]
+    return_values: list[Field]
+
+#extract messages
+def extract_messages(parsed_xml) -> List[Message]:
+    messages = parsed_xml['schema']['messages']['message']
+    message_data = []
+
+    for message in messages:
+        message_name = message['@name']  #extract message name
+
+        field_names = []
+        fields = message['fields']['field']
+        
+        #checking if fields is a list or a single field
+        if isinstance(fields, list):
+            for field in fields:
+                field_object = Field(
+                    required = field.get('@required', 'false') == 'true',
+                    default_val = field.get('@default', ''),
+                    type_field = field['@type'],
+                    name = field['#text']
+                )
+                if '[]' in field_object.type_field:
+                    field_object.type_field = field_object.type_field[:-2]
+                    field_object.array = True
+                field_names.append(field_object)
+
+        #running for a single field case so for loop isn't executed when unecessary
+        else:
+            field_object = Field(
+                required = fields.get('@required', 'false') == 'true',
+                default_val = fields.get('@default', ''),
+                type_field = fields['@type'],
+                name = fields['#text']
+            )
+            #do something similar to this, grap type and default value instead
+            if '[]' in field_object.type_field:
+                field_object.type_field = field_object.type_field[:-2]
+                field_object.array = True
+
+            field_names.append(field_object)
+        
+        message_data.append(Message(name = message_name, base_size = 0, fields = field_names))
+
+    return message_data
+
+#extract procedures
+def extract_procedures(parsed_xml: Any) -> List[Procedure]:
+    procedures = parsed_xml['schema']['procedures']['procedure']
+    procedure_data = []
+
+    #loop through the procedures provided in the xml code
+    for procedure in procedures:
+        procedure_name = procedure['@name'] #extract procedure name
+        description = procedure['description']
+
+        #procedure_info = {'parameters': [], 'returns': []}
+
+        #extract parameters
+        parameters = procedure['parameters']['field']
+        parameter_data = []
+        
+        if isinstance(parameters, list):
+            for parameter in parameters:
+                param_object = Field(
+                    required = parameter.get('@required', 'false') == 'true',
+                    default_val = parameter.get('@default', ''),
+                    type_field = parameter['@type'],
+                    name = parameter['#text']
+                )
+
+                parameter_data.append(param_object)
+        #case for a single parameter
+        else: 
+            param_object = Field(
+                required = parameters.get('@required', 'false') == 'true',
+                default_val = parameters.get('@default', ''),
+                type_field = parameters['@type'],
+                name = parameters['#text']
+            )
+
+            parameter_data.append(param_object)
+
+        #now extract the return fields
+        returns = procedure['returns']['field']
+        return_data = []
+
+        if isinstance(returns, list):
+            for ret in returns:
+                ret_object = Field(
+                    required = ret.get('@required', 'false') == 'true',
+                    default_val = ret.get('@default', ''),
+                    type_field = ret['@type'],
+                    name = ret['#text']
+                )
+
+                return_data.append(ret_object)
+        else:
+            ret_object = Field(
+                required = returns.get('@required', 'false') == 'true',
+                default_val = returns.get('@default', ''),
+                type_field = returns['@type'],
+                name = returns['#text']
+            )
+
+            return_data.append(ret_object)
+
+        #updating values in the Procedure class
+        procedure_data.append(Procedure(name = procedure_name, description = description, parameters = parameter_data, return_values = return_data))
+    
+    return procedure_data
+
+server.js commit:
+
+for issue 26:
+
+const express = require('express');
+const obj = express();
+const port = 8080;	//given port number
+
+//defining the /api/hello route
+obj.get('/api/hello', (req, res) => {
+	res.send('hello world');
+});
+
+//starting the server and listening on port 8080
+obj.listen(port, () => {
+	//using this to print the URL we can access the server with
+	console.log(`Server is running on http://localhost:${port}`);
+});
