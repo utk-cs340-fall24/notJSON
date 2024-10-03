@@ -29,6 +29,7 @@ int main(int argc, char* argv[]) {
 
 
     else {
+<<<<<<< HEAD
         int running = 1;
             char ServerMessage[1000]= "Hello, From Client";
             char recBuf[1000];
@@ -49,6 +50,19 @@ int main(int argc, char* argv[]) {
 
         end_connection(clientSocket);
 
+=======
+        char * ServerMessage = "Hello, From Client";
+        char recBuf[1000];
+        send(clientSocket, ServerMessage, strlen(ServerMessage), 0);
+        printf("Client: Message Sent \n");
+        //recv(clientSocket, ServerMessage, sizeof(ServerMessage), 0);
+        read(clientSocket, recBuf, sizeof(recBuf)-1);
+        printf("Message Received. Message: %s\n",  recBuf);
+
+
+        close(clientSocket);
+    
+>>>>>>> cb9b675563a4c950b93493553f17e4c07053332c
     }
      return 0;
 }

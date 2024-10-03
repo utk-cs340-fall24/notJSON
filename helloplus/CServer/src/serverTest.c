@@ -37,7 +37,11 @@ int main(int argc, char * argv[]) {
     }
 
     // TODO: Cooldown on running server on same port after a former run, resolve
+<<<<<<< HEAD
     setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR | SO_RCVTIMEO | SO_KEEPALIVE, &opt, sizeof(opt));
+=======
+    setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+>>>>>>> cb9b675563a4c950b93493553f17e4c07053332c
 
     bind(serverSocket, (struct sockaddr *)&address, lenAddr);
 
@@ -50,6 +54,7 @@ int main(int argc, char * argv[]) {
         return -1;
     }
 
+<<<<<<< HEAD
     int running = 1;
 
 
@@ -62,6 +67,16 @@ int main(int argc, char * argv[]) {
         send(clientSocket, testBuf, strlen(testBuf), 0);
         printf("Server: Message Sent.\n");
     }
+=======
+
+    char * testBuf = "Hello, From Server";
+    char recBuf[1000];
+    read(clientSocket, recBuf, sizeof(recBuf)-1);
+    printf("Server: Message Received. Message : %s\n", recBuf);
+    
+    send(clientSocket, testBuf, strlen(testBuf), 0);
+    printf("Server: Message Sent.\n");
+>>>>>>> cb9b675563a4c950b93493553f17e4c07053332c
     
    
     close(serverSocket);
