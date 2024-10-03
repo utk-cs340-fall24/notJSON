@@ -44,6 +44,12 @@ primitive_mapping = {
 }
 
 @dataclass
+class Metadata:
+    message_identifier: int
+    version_number: int
+    optionals_bitfield: List[bool]
+
+@dataclass
 class Field:
     required: bool
     default_val: str
