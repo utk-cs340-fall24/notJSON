@@ -17,8 +17,8 @@ typedef bool boolean;
 {% for message in messages -%}
   typedef struct {{ message.name }} {
   {% for field in message.fields %}
-    {% if '[]' in field.type_field %}
-      {{ field.type_field[:-2] }}* {{ field.name }};
+    {% if field.array %}
+      {{ field.type_field }}* {{ field.name }};
       size_t {{ field.name}}_count;
     {% else %}
       {{ field.type_field }} {{ field.name }};
