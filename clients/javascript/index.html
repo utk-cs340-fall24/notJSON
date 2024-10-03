@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Byte Array Sender</title>
+  </head>
+  <body>
+    <h1>Send Input as Byte Array</h1>
+    <input type="text" id="userInput" placeholder="Enter something" />
+    <button id="sendButton">Send</button>
+    <div id="response" style="margin-top: 20px"></div>
+
+    <script>
+      document.getElementById("sendButton").onclick = function () {
+        const input = document.getElementById("userInput").value;
+        const byteArray = new TextEncoder().encode(input);
+
+        fetch("http://localhost:1234", {
+          method: "POST",
+          body: byteArray,
+          headers: {
+            "Content-Type": "application/octet-stream",
+          },
+        })
+          .then((response) => response.text())
+          .then((data) => {
+            document.getElementById("response").innerText = `Response: ${data}`;
+          })
+          .catch((error) => {
+            document.getElementById("response").innerText = `Error: ${error}`;
+          });
+      };
+    </script>
+  </body>
+</html>

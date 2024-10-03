@@ -3,6 +3,7 @@
 *.log
 tmp/
 venv/
+output/
 
 *.py[cod]
 *.egg

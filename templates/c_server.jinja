@@ -1,8 +1,29 @@
-{%- for message in messages -%}
-  typedef struct {{ message['@name'] }} {
-  {% for field in message['fields']['field'] %}
-    {{ field['@type'] }} {{ field['#text'] }};
+#include <stdint.h>
+#include <stdbool.h>
+#include <time.h>
+
+typedef char* string;
+typedef int64_t i64;
+typedef uint64_t u64;
+typedef int32_t i32;
+typedef uint32_t u32;
+typedef int16_t i16;
+typedef uint16_t u16;
+typedef int8_t i8;
+typedef uint8_t u8;
+typedef time_t timestamp;
+typedef bool boolean;
+
+{% for message in messages -%}
+  typedef struct {{ message.name }} {
+  {% for field in message.fields %}
+    {% if field.array %}
+      {{ field.type_field }}* {{ field.name }};
+      size_t {{ field.name}}_count;
+    {% else %}
+      {{ field.type_field }} {{ field.name }};
+    {% endif %}
   {% endfor %}
-} {{message['@name']}};
+} {{message.name}};
 
 {% endfor %}
