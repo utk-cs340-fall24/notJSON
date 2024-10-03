@@ -12,12 +12,9 @@ struct sockaddr_in new_addr(int *socketfd) {
 
     return address;
 }
-<<<<<<< HEAD
 
 
 int end_connection(int socket) {
     close(socket);
     return 0;
 }
-=======
->>>>>>> cb9b675563a4c950b93493553f17e4c07053332c
