@@ -2,10 +2,11 @@
 
 import xmltodict
 import argparse
+import queue
 from typing import Any, Dict, List
 from jinja2 import Environment, FileSystemLoader
 from typing import Any
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 
 # Creates a mapping of typename to type size
@@ -25,12 +26,30 @@ class Primitive(Enum):
     NJ_TIMESTAMP = 8
     NJ_BOOLEAN = 1
 
+primitive_mapping = {
+    "string": Primitive.NJ_STRING,
+    "i64": Primitive.NJ_I64,
+    "u64": Primitive.NJ_U64,
+    "i32": Primitive.NJ_I32,
+    "u32": Primitive.NJ_U32,
+    "i16": Primitive.NJ_I16,
+    "u16": Primitive.NJ_U16,
+    "i8 ": Primitive.NJ_I8 ,
+    "u8 ": Primitive.NJ_U8 ,
+    "char": Primitive.NJ_CHAR,
+    "double": Primitive.NJ_DOUBLE,
+    "float": Primitive.NJ_FLOAT,
+    "timestamp": Primitive.NJ_TIMESTAMP,
+    "boolean": Primitive.NJ_BOOLEAN,
+}
+
 @dataclass
 class Field:
     required: bool
     default_val: str
     type_field: str
     name: str
+    array: bool = False
 
 @dataclass
 class Message:
@@ -65,6 +84,9 @@ def extract_messages(parsed_xml) -> List[Message]:
                     type_field = field['@type'],
                     name = field['#text']
                 )
+                if '[]' in field_object.type_field:
+                    field_object.type_field = field_object.type_field[:-2]
+                    field_object.array = True
                 field_names.append(field_object)
 
         #running for a single field case so for loop isn't executed when unecessary
@@ -76,6 +98,10 @@ def extract_messages(parsed_xml) -> List[Message]:
                 name = fields['#text']
             )
             #do something similar to this, grap type and default value instead
+            if '[]' in field_object.type_field:
+                field_object.type_field = field_object.type_field[:-2]
+                field_object.array = True
+
             field_names.append(field_object)
         
         message_data.append(Message(name = message_name, base_size = 0, fields = field_names))
@@ -148,6 +174,70 @@ def extract_procedures(parsed_xml: Any) -> List[Procedure]:
     
     return procedure_data
 
+@dataclass
+class GraphNode:
+    name: str
+    type_name: str
+    edges: List[int] = field(default_factory=list)
+    in_degree: int = 0
+
+def has_circular_deps(messages: List[Message]):
+    # A basic circular dependency detection algorithm using Kahns Algorithm for Topological Sorting
+    nodes: List[GraphNode] = []
+
+    for message in messages:
+        temp_node: GraphNode = GraphNode(name = message.name, type_name = message.name)
+
+        for field in message.fields:
+            found: bool = False
+            if field.type_field in primitive_mapping:
+                continue
+
+            for index, user_defined in enumerate(messages):
+                if user_defined.name == field.type_field:
+                    if user_defined.name == message.name:
+                        print(f"Attempting to include a message ({message.name}) within itself!")
+                        exit()
+
+                    temp_node.edges.append(index)
+                    found = True
+                    break
+
+            if not found:
+                print('Error while resolving dependencies of ' + message.name + ', cannot find type definition for field of type ' + field.type_field)
+                exit()
+
+        nodes.append(temp_node)
+
+    for i in range(len(messages)):
+        for j in range(len(nodes[i].edges)):
+            nodes[nodes[i].edges[j]].in_degree += 1
+
+    visited: int = 0
+    q: queue.Queue = queue.Queue()
+
+    for node in nodes:
+        if node.in_degree == 0:
+            q.put(node)
+
+    while q.qsize() > 0:
+        e = q.get()
+
+        visited += 1
+
+        for i in range(len(e.edges)):
+            nodes[e.edges[i]].in_degree -= 1
+
+            if nodes[e.edges[i]].in_degree == 0:
+                q.put(nodes[e.edges[i]])
+
+    if visited == len(messages):
+        return False
+
+    circular_deps = [n.name for n in nodes if n.in_degree != 0]
+    print("Circular Dependencies: " + " <-> ".join(circular_deps))
+    return True
+
 def read_file(filename: str):
     with open(filename, 'r') as file:
         content: str = file.read()
@@ -170,6 +260,10 @@ def main(schemafile: str, template_file: str, output_file: str):
     message_data = extract_messages(parsed_xml);
     procedure_data = extract_procedures(parsed_xml)
 
+    if has_circular_deps(message_data):
+        print('Your schemafile contains circular dependencies!')
+        exit()
+
     template = environment.get_template(template_file)
     context = {
         "messages": message_data
@@ -177,8 +271,6 @@ def main(schemafile: str, template_file: str, output_file: str):
 
     output: str = template.render(context)
     write_file(output_file, output)
-
-
 
 if __name__ == '__main__':
     parser: argparse.ArgumentParser = argparse.ArgumentParser(
