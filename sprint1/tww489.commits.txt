@@ -1,0 +1,165 @@
+Note: Written on desktop through WSL unbuntu, so username isnt synced, so 'root' shows. will work to fix for next sprint
+
+server.h
+
+6605a53a (root 2024-10-03 07:21:13 -0400  1) #include <netinet/in.h>
+6605a53a (root 2024-10-03 07:21:13 -0400  2) #include <stdio.h>
+6605a53a (root 2024-10-03 07:21:13 -0400  3) #include <stdlib.h>
+6605a53a (root 2024-10-03 07:21:13 -0400  4) #include <string.h>
+6605a53a (root 2024-10-03 07:21:13 -0400  5) #include <sys/socket.h>
+6605a53a (root 2024-10-03 07:21:13 -0400  6) #include <unistd.h>
+6605a53a (root 2024-10-03 07:21:13 -0400  7) #include <fcntl.h>
+6605a53a (root 2024-10-03 07:21:13 -0400  8) #include <arpa/inet.h>
+6605a53a (root 2024-10-03 07:21:13 -0400  9)
+6605a53a (root 2024-10-03 07:21:13 -0400 10) #define PORT 8080
+6605a53a (root 2024-10-03 07:21:13 -0400 11)
+6605a53a (root 2024-10-03 07:21:13 -0400 12) struct sockaddr_in new_addr(int *socketfd); // Fills Socket Address
+6605a53a (root 2024-10-03 07:21:13 -0400 13) int end_connection(int); // Disconnects from the server.
+
+server.c
+
+6605a53a (root 2024-10-03 07:21:13 -0400  1) #include "../inc/server.h"
+6605a53a (root 2024-10-03 07:21:13 -0400  2)
+6605a53a (root 2024-10-03 07:21:13 -0400  3) #define PORT 8080
+6605a53a (root 2024-10-03 07:21:13 -0400  4)
+6605a53a (root 2024-10-03 07:21:13 -0400  5) // Fills a socket address
+6605a53a (root 2024-10-03 07:21:13 -0400  6) struct sockaddr_in new_addr(int *socketfd) {
+6605a53a (root 2024-10-03 07:21:13 -0400  7)     struct sockaddr_in address;
+6605a53a (root 2024-10-03 07:21:13 -0400  8)     address.sin_family = AF_INET;
+6605a53a (root 2024-10-03 07:21:13 -0400  9)     address.sin_addr.s_addr = INADDR_ANY;
+6605a53a (root 2024-10-03 07:21:13 -0400 10)     address.sin_port = htons(PORT);
+6605a53a (root 2024-10-03 07:21:13 -0400 11)
+6605a53a (root 2024-10-03 07:21:13 -0400 12)
+6605a53a (root 2024-10-03 07:21:13 -0400 13)     return address;
+6605a53a (root 2024-10-03 07:21:13 -0400 14) }
+
+serverClient.c
+
+6605a53a (root 2024-10-03 07:21:13 -0400  1) // Note: Run/written on Linux Via WSL
+6605a53a (root 2024-10-03 07:21:13 -0400  2) // Server Program
+6605a53a (root 2024-10-03 07:21:13 -0400  3) // Allows a client to connect, receiving a hello message, and sending it back
+6605a53a (root 2024-10-03 07:21:13 -0400  4) 
+6605a53a (root 2024-10-03 07:21:13 -0400  5) 
+6605a53a (root 2024-10-03 07:21:13 -0400  6) #include "../inc/server.h"
+6605a53a (root 2024-10-03 07:21:13 -0400  7) 
+6605a53a (root 2024-10-03 07:21:13 -0400  8) int main(int argc, char * argv[]) {
+6605a53a (root 2024-10-03 07:21:13 -0400  9)     if (argc != 2) {
+6605a53a (root 2024-10-03 07:21:13 -0400 10)         perror("Error: Need an argument");
+6605a53a (root 2024-10-03 07:21:13 -0400 11)         return -1;
+6605a53a (root 2024-10-03 07:21:13 -0400 12)     }
+6605a53a (root 2024-10-03 07:21:13 -0400 13)     int fd = 0;
+6605a53a (root 2024-10-03 07:21:13 -0400 14)     int serverSocket;
+6605a53a (root 2024-10-03 07:21:13 -0400 15)     int opt = 1;
+6605a53a (root 2024-10-03 07:21:13 -0400 16)     struct sockaddr_in  address = new_addr(&serverSocket);
+6605a53a (root 2024-10-03 07:21:13 -0400 17)     socklen_t lenAddr = sizeof(address);
+6605a53a (root 2024-10-03 07:21:13 -0400 18)     // fd = open(argv[1], O_RDONLY);
+6605a53a (root 2024-10-03 07:21:13 -0400 19)     char * file  = (char *)malloc(sizeof(char) * sizeof(argv[1]));
+6605a53a (root 2024-10-03 07:21:13 -0400 20)     file = argv[1];
+6605a53a (root 2024-10-03 07:21:13 -0400 21)     fd = open(argv[1], O_RDONLY);
+6605a53a (root 2024-10-03 07:21:13 -0400 22) 
+6605a53a (root 2024-10-03 07:21:13 -0400 23)     if (fd < 1) {
+6605a53a (root 2024-10-03 07:21:13 -0400 24)         perror("Unable to open file.");
+6605a53a (root 2024-10-03 07:21:13 -0400 25)         return -1;
+6605a53a (root 2024-10-03 07:21:13 -0400 26)     }
+6605a53a (root 2024-10-03 07:21:13 -0400 27)     int fileSize = lseek(fd, 0, SEEK_END);
+6605a53a (root 2024-10-03 07:21:13 -0400 28)     printf("%d \n", fileSize);
+6605a53a (root 2024-10-03 07:21:13 -0400 29)     lseek(fd, 0, SEEK_SET);
+6605a53a (root 2024-10-03 07:21:13 -0400 30)     char *buf = (char *)malloc(fileSize * sizeof(char));
+6605a53a (root 2024-10-03 07:21:13 -0400 31)     read(fd, buf, fileSize);
+6605a53a (root 2024-10-03 07:21:13 -0400 32)     
+6605a53a (root 2024-10-03 07:21:13 -0400 33)     serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+6605a53a (root 2024-10-03 07:21:13 -0400 34)     if (serverSocket  < 0) {
+6605a53a (root 2024-10-03 07:21:13 -0400 35)         perror("Unable to create socket");
+6605a53a (root 2024-10-03 07:21:13 -0400 36)         return -1;
+6605a53a (root 2024-10-03 07:21:13 -0400 37)     }
+6605a53a (root 2024-10-03 07:21:13 -0400 38) 
+6605a53a (root 2024-10-03 07:21:13 -0400 39)     // TODO: Cooldown on running server on same port after a former run, resolve
+6605a53a (root 2024-10-03 07:21:13 -0400 40)     setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR | SO_RCVTIMEO | SO_KEEPALIVE, &opt, sizeof(opt));
+6605a53a (root 2024-10-03 07:21:13 -0400 41) 
+6605a53a (root 2024-10-03 07:21:13 -0400 42)     bind(serverSocket, (struct sockaddr *)&address, lenAddr);
+6605a53a (root 2024-10-03 07:21:13 -0400 43) 
+6605a53a (root 2024-10-03 07:21:13 -0400 44)     listen(serverSocket, 100);
+6605a53a (root 2024-10-03 07:21:13 -0400 45)     // printf("%s", buf);
+6605a53a (root 2024-10-03 07:21:13 -0400 46)     
+6605a53a (root 2024-10-03 07:21:13 -0400 47)     int clientSocket = accept(serverSocket, (struct sockaddr *)&address, &lenAddr);
+6605a53a (root 2024-10-03 07:21:13 -0400 48)     if (clientSocket < 0) {
+6605a53a (root 2024-10-03 07:21:13 -0400 49)         perror("Error Connecting");
+6605a53a (root 2024-10-03 07:21:13 -0400 50)         return -1;
+6605a53a (root 2024-10-03 07:21:13 -0400 51)     }
+6605a53a (root 2024-10-03 07:21:13 -0400 52) 
+6605a53a (root 2024-10-03 07:21:13 -0400 53)     int running = 1;
+6605a53a (root 2024-10-03 07:21:13 -0400 54) 
+6605a53a (root 2024-10-03 07:21:13 -0400 55) 
+6605a53a (root 2024-10-03 07:21:13 -0400 56)     while (running) {
+6605a53a (root 2024-10-03 07:21:13 -0400 57)         sleep(10);
+6605a53a (root 2024-10-03 07:21:13 -0400 58)         char testBuf[1000] = "Message Received";
+6605a53a (root 2024-10-03 07:21:13 -0400 59)         char recBuf[1000];
+6605a53a (root 2024-10-03 07:21:13 -0400 60)         recv(clientSocket, recBuf, sizeof(recBuf)-1 ,  MSG_WAITALL);
+6605a53a (root 2024-10-03 07:21:13 -0400 61)         printf("Server: Message Received. Message : %s\n", recBuf);
+6605a53a (root 2024-10-03 07:21:13 -0400 62)         send(clientSocket, testBuf, strlen(testBuf), 0);
+6605a53a (root 2024-10-03 07:21:13 -0400 63)         printf("Server: Message Sent.\n");
+6605a53a (root 2024-10-03 07:21:13 -0400 64)     }
+6605a53a (root 2024-10-03 07:21:13 -0400 65)     
+6605a53a (root 2024-10-03 07:21:13 -0400 66)    
+6605a53a (root 2024-10-03 07:21:13 -0400 67)     close(serverSocket);
+6605a53a (root 2024-10-03 07:21:13 -0400 68)     close(clientSocket);
+6605a53a (root 2024-10-03 07:21:13 -0400 69)     close(fd);
+6605a53a (root 2024-10-03 07:21:13 -0400 70)     return 0;
+6605a53a (root 2024-10-03 07:21:13 -0400 71) }
+
+clientTest.c
+
+6605a53a (root 2024-10-03 07:21:13 -0400  1) #include "../inc/server.h"
+6605a53a (root 2024-10-03 07:21:13 -0400  2) // Client Program
+6605a53a (root 2024-10-03 07:21:13 -0400  3) // Connects to a server, sending a hello message
+6605a53a (root 2024-10-03 07:21:13 -0400  4) 
+6605a53a (root 2024-10-03 07:21:13 -0400  5) int main(int argc, char* argv[]) {
+6605a53a (root 2024-10-03 07:21:13 -0400  6)     int clientSocket = socket(AF_INET, SOCK_STREAM, 0);
+6605a53a (root 2024-10-03 07:21:13 -0400  7)     struct sockaddr_in address = new_addr(&clientSocket);
+6605a53a (root 2024-10-03 07:21:13 -0400  8) 
+6605a53a (root 2024-10-03 07:21:13 -0400  9)     socklen_t lenAddr = sizeof(address);
+6605a53a (root 2024-10-03 07:21:13 -0400 10) 
+6605a53a (root 2024-10-03 07:21:13 -0400 11)     if (clientSocket  < 0) {
+6605a53a (root 2024-10-03 07:21:13 -0400 12)         perror("Unable to create socket");
+6605a53a (root 2024-10-03 07:21:13 -0400 13)         return -1;
+6605a53a (root 2024-10-03 07:21:13 -0400 14)     }
+6605a53a (root 2024-10-03 07:21:13 -0400 15) 
+6605a53a (root 2024-10-03 07:21:13 -0400 16) 
+6605a53a (root 2024-10-03 07:21:13 -0400 17) 
+6605a53a (root 2024-10-03 07:21:13 -0400 18)     int connectStatus = connect(clientSocket, (struct sockaddr*)&address, lenAddr);
+6605a53a (root 2024-10-03 07:21:13 -0400 19)     if (connectStatus== -1) {
+6605a53a (root 2024-10-03 07:21:13 -0400 20)         perror("Unable to Connect to Server");
+6605a53a (root 2024-10-03 07:21:13 -0400 21)         return -1;
+6605a53a (root 2024-10-03 07:21:13 -0400 22)     }
+6605a53a (root 2024-10-03 07:21:13 -0400 23)     if (inet_pton(AF_INET, "127.0.0.1", &address.sin_addr)
+6605a53a (root 2024-10-03 07:21:13 -0400 24)         <= 0) {
+6605a53a (root 2024-10-03 07:21:13 -0400 25)         printf(
+6605a53a (root 2024-10-03 07:21:13 -0400 26)             "\nInvalid address/ Address not supported \n");
+6605a53a (root 2024-10-03 07:21:13 -0400 27)         return -1;
+6605a53a (root 2024-10-03 07:21:13 -0400 28)     }
+6605a53a (root 2024-10-03 07:21:13 -0400 29) 
+6605a53a (root 2024-10-03 07:21:13 -0400 30) 
+6605a53a (root 2024-10-03 07:21:13 -0400 31)     else {
+6605a53a (root 2024-10-03 07:21:13 -0400 32)         int running = 1;
+6605a53a (root 2024-10-03 07:21:13 -0400 33)             char ServerMessage[1000]= "Hello, From Client";
+6605a53a (root 2024-10-03 07:21:13 -0400 34)             char recBuf[1000];
+6605a53a (root 2024-10-03 07:21:13 -0400 35)             send(clientSocket, ServerMessage, strlen(ServerMessage), 0);
+6605a53a (root 2024-10-03 07:21:13 -0400 36)             printf("Client: Message Sent \n");
+6605a53a (root 2024-10-03 07:21:13 -0400 37)             //recv(clientSocket, ServerMessage, sizeof(ServerMessage), 0);
+6605a53a (root 2024-10-03 07:21:13 -0400 38)             recv(clientSocket, recBuf, sizeof(recBuf)-1,  MSG_WAITALL);
+6605a53a (root 2024-10-03 07:21:13 -0400 39)             printf("Client: Message Received. Message: %s\n",  recBuf);
+6605a53a (root 2024-10-03 07:21:13 -0400 40)         while (running) {
+6605a53a (root 2024-10-03 07:21:13 -0400 41)             scanf(" %s", ServerMessage);
+6605a53a (root 2024-10-03 07:21:13 -0400 42)             printf("Used: %s \n", ServerMessage);
+6605a53a (root 2024-10-03 07:21:13 -0400 43)             send(clientSocket, ServerMessage, strlen(ServerMessage), 0);
+6605a53a (root 2024-10-03 07:21:13 -0400 44)             printf("Client: Message Sent \n");
+6605a53a (root 2024-10-03 07:21:13 -0400 45)             //recv(clientSocket, ServerMessage, sizeof(ServerMessage), 0);
+6605a53a (root 2024-10-03 07:21:13 -0400 46)             recv(clientSocket, recBuf, sizeof(recBuf)-1,  MSG_WAITALL);
+6605a53a (root 2024-10-03 07:21:13 -0400 47)             printf("Client: Message Received. Message: %s\n",  recBuf);
+6605a53a (root 2024-10-03 07:21:13 -0400 48)         }
+6605a53a (root 2024-10-03 07:21:13 -0400 49) 
+6605a53a (root 2024-10-03 07:21:13 -0400 50)         end_connection(clientSocket);
+6605a53a (root 2024-10-03 07:21:13 -0400 51) 
+6605a53a (root 2024-10-03 07:21:13 -0400 52)     }
+6605a53a (root 2024-10-03 07:21:13 -0400 53)      return 0;
+6605a53a (root 2024-10-03 07:21:13 -0400 54) }
