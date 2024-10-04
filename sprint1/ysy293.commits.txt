@@ -1,0 +1,149 @@
+script.py
+
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400   6) from typing import Any, Dict, List
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400  60) @dataclass
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400  61) class Message:
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400  62)     name: str
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400  63)     base_size: int
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400  64)     fields: list[Field]
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400  65)
+33047f59 (Jason West    2024-09-26 13:44:05 -0400  66) @dataclass
+33047f59 (Jason West    2024-09-26 13:44:05 -0400  67) class Procedure:
+33047f59 (Jason West    2024-09-26 13:44:05 -0400  68)     name: str
+33047f59 (Jason West    2024-09-26 13:44:05 -0400  69)     description: str
+33047f59 (Jason West    2024-09-26 13:44:05 -0400  70)     parameters: list[Field]
+33047f59 (Jason West    2024-09-26 13:44:05 -0400  71)     return_values: list[Field]
+33047f59 (Jason West    2024-09-26 13:44:05 -0400  72)
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400  73) #extract messages
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400  75)     messages = parsed_xml['schema']['messages']['message']
+33047f59 (Jason West    2024-09-26 13:44:05 -0400  76)     message_data = []
+33047f59 (Jason West    2024-09-26 13:44:05 -0400  77)
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400  78)     for message in messages:
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400  79)         message_name = message['@name']  #extract message name
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400  80)
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400  81)         field_names = []
+3f65c041 (Jason West    2024-09-26 09:21:42 -0400  82)         fields = message['fields']['field']
+33047f59 (Jason West    2024-09-26 13:44:05 -0400  83)
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400  84)         #checking if fields is a list or a single field
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400  85)         if isinstance(fields, list):
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400  86)             for field in fields:
+33047f59 (Jason West    2024-09-26 13:44:05 -0400  87)                 field_object = Field(
+33047f59 (Jason West    2024-09-26 13:44:05 -0400  88)                     required = field.get('@required', 'false')
+== 'true',
+33047f59 (Jason West    2024-09-26 13:44:05 -0400  89)                     default_val = field.get('@default', ''),
+33047f59 (Jason West    2024-09-26 13:44:05 -0400  90)                     type_field = field['@type'],
+33047f59 (Jason West    2024-09-26 13:44:05 -0400  91)                     name = field['#text']
+33047f59 (Jason West    2024-09-26 13:44:05 -0400  92)                 )
+33047f59 (Jason West    2024-09-26 13:44:05 -0400  97)
+b3b45b31 (Jason West    2024-10-01 20:40:46 -0400  98)         #running for a single field case so for loop isn't
+executed when unecessary
+b3b45b31 (Jason West    2024-10-01 20:40:46 -0400  99)         else:    
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 100)             field_object = Field(
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 101)                 required = fields.get('@required', 'false') == 'true',
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 102)                 default_val = fields.get('@default', ''),
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 103)                 type_field = fields['@type'],
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 104)                 name = fields['#text']
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 105)             )
+b3b45b31 (Jason West    2024-10-01 20:40:46 -0400 106)             #do something similar to this, grap type and
+default value instead
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 111)             field_names.append(field_object)
+3f65c041 (Jason West    2024-09-26 09:21:42 -0400 112)
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 113)         message_data.append(Message(name = message_name,
+base_size = 0, fields = field_names))
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400 114)
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400 115)     return message_data
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400 116)
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400 117) #extract procedures
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400 119)     procedures = parsed_xml['schema']['procedures']['procedure']
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 120)     procedure_data = []
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400 121)
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400 122)     #loop through the procedures provided in the xml code
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400 123)     for procedure in procedures:
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400 124)         procedure_name = procedure['@name'] #extract procedure
+name
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 125)         description = procedure['description']
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400 126)
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 127)         #procedure_info = {'parameters': [], 'returns': []}
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400 128)
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400 129)         #extract parameters
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400 130)         parameters = procedure['parameters']['field']
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 131)         parameter_data = []
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 132)
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400 133)         if isinstance(parameters, list):
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 134)             for parameter in parameters:
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 135)                 param_object = Field(
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 136)                     required = parameter.get('@required',
+'false') == 'true',
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 137)                     default_val = parameter.get('@default', ''),
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 138)                     type_field = parameter['@type'],
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 139)                     name = parameter['#text'] 
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 140)                 )
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 141)
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 142)                 parameter_data.append(param_object)
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400 143)         #case for a single parameter
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400 144)         else:
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 145)             param_object = Field(
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 146)                 required = parameters.get('@required', 'false')
+== 'true',
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 147)                 default_val = parameters.get('@default', ''),
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 148)                 type_field = parameters['@type'],
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 149)                 name = parameters['#text']
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 150)             )
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 151)
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 152)             parameter_data.append(param_object)
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400 153)
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400 154)         #now extract the return fields
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400 155)         returns = procedure['returns']['field']
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 156)         return_data = []
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 157)
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400 158)         if isinstance(returns, list):
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400 159)             for ret in returns:
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 160)                 ret_object = Field(
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 161)                     required = ret.get('@required', 'false') ==
+'true',
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 162)                     default_val = ret.get('@default', ''),
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 163)                     type_field = ret['@type'],
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 164)                     name = ret['#text']
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 165)                 )
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 166)
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 167)                 return_data.append(ret_object)
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400 168)         else:
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 169)             ret_object = Field(
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 170)                 required = returns.get('@required', 'false') ==
+'true',
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 171)                 default_val = returns.get('@default', ''),
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 172)                 type_field = returns['@type'],
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 173)                 name = returns['#text']
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 174)             )
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 175)
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 176)             return_data.append(ret_object)     
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400 177)
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 178)         #updating values in the Procedure class
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 179)         procedure_data.append(Procedure(name = procedure_name,
+description = description, parameters = parameter_data, return_values = return_data))
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400 180)
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400 181)     return procedure_data
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400 182)
+3f65c041 (Jason West    2024-09-26 09:21:42 -0400 259)     parsed_xml: Any = xmltodict.parse(content)
+3f65c041 (Jason West    2024-09-26 09:21:42 -0400 266)     message_data = extract_messages(parsed_xml);
+3f65c041 (Jason West    2024-09-26 09:21:42 -0400 267)     procedure_data = extract_procedures(parsed_xml)
+3f65c041 (Jason West    2024-09-26 09:21:42 -0400 268)
+33047f59 (Jason West    2024-09-26 13:44:05 -0400 280)
+65db48e7 (Jason West    2024-09-26 08:50:33 -0400 292)
+
+server.js
+
+c69f35fb (Jason West 2024-10-02 16:49:21 -0400  1) const express = require('express');
+c69f35fb (Jason West 2024-10-02 16:49:21 -0400  2) const obj = express();
+c69f35fb (Jason West 2024-10-02 16:49:21 -0400  3) const port = 8080;   //given port number
+c69f35fb (Jason West 2024-10-02 16:49:21 -0400  4)
+c69f35fb (Jason West 2024-10-02 16:49:21 -0400  5) //defining the /api/hello route
+c69f35fb (Jason West 2024-10-02 16:49:21 -0400  6) obj.get('/api/hello', (req, res) => {
+c69f35fb (Jason West 2024-10-02 16:49:21 -0400  7)      res.send('hello world');
+c69f35fb (Jason West 2024-10-02 16:49:21 -0400  8) });
+c69f35fb (Jason West 2024-10-02 16:49:21 -0400  9)
+c69f35fb (Jason West 2024-10-02 16:49:21 -0400 10) //starting the server and listening on port 8080
+c69f35fb (Jason West 2024-10-02 16:49:21 -0400 11) obj.listen(port, () => {
+c69f35fb (Jason West 2024-10-02 16:49:21 -0400 12)      //using this to print the URL we can access the server with
+c69f35fb (Jason West 2024-10-02 16:49:21 -0400 13)      console.log(`Server is running on http://localhost:${port}`);
+c69f35fb (Jason West 2024-10-02 16:49:21 -0400 14) });
