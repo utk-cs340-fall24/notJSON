@@ -9,3 +9,4 @@ output/
 *.egg
 build
 htmlcov
+node_modules/

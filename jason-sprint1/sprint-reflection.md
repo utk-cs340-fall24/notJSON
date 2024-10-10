@@ -1,0 +1,31 @@
+# Sprint 1
+
+Jason West, ysy293 | notJSON
+
+### What I planned to do
+- Planned to write a simple web server in JavaScript (Issue 26): https://github.com/utk-cs340-fall24/notJSON/issues/26
+- Planned to parse the xml schemafile into a Python datastructure, specifically the dataclass 'Procedures' (Issue 3): https://github.com/utk-cs340-fall24/notJSON/issues/3
+- Planned to parse the xml schemafile into a Python datastructure, specifically the dataclass 'Messages' (Issue 2): https://github.com/utk-cs340-fall24/notJSON/issues/2
+
+### What I did not do
+- I achieved all 3 issues that I planned to do finished by the in-class Sprint 1 demo.
+
+### What problems I encountered
+- Only problem I ran into was not understanding .gitignore and removing a directory of node_modules, when I should've just added it to .gitignore
+
+### Issues I worked on
+- Write a simple web server in JavaScript: https://github.com/utk-cs340-fall24/notJSON/issues/26
+- Parse XML Schema to Python Datastructure (Procedures): https://github.com/utk-cs340-fall24/notJSON/issues/3
+- Parse XML Schema to Python Datastructure (Messages): https://github.com/utk-cs340-fall24/notJSON/issues/2
+
+### Files I worked on
+- utk-cs340-fall24/notJSON/script.py
+- utk-cs340-fall24/notJSON/server.js
+
+### What I accomplished
+In this sprint, the meat of what I accomplished exists in the extract_messages and extract_procedures functions of script.py, . I parsed the example XML schemafile into specific datatypes using Pyhton 
+algorithms, and once I had the data fully analyzed and separated, I loaded those into Python datastructures 'Procedures' and 'Messages', like listed before in the issues. Once I parsed the file and 
+built the Messages and Procedures classes, I constructed a few print statements that showed the output of the values in these two dataclasses to make sure it was parsing correctly. These print statements 
+were later removed for cleanup for our Sprint 1 demo. The final thing I accomplished was developing a JavaScript web server. This was just a simple case to understand what we were going to do in future 
+sprints. I wrote JavaScript code using express.js to develop a server on the port and route 8080/api/hello that simply printed "hello world". This output could be accessed at the link 
+http://localhost:8080/api/hello when server.js is running.  
