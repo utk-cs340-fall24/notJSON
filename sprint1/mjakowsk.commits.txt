@@ -1,0 +1,420 @@
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400   1) # New Language Tutorial
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400   2) 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400   3) The purpose of this documentation is to create a guide so
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400   4) that outlines the steps necessary in order to add support
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400   5) for new langauges to the notJSON tool. The notJSON tool
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400   6) is intended to simplify the process of creating efficient
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400   7) client-server applications. The tool accomplishes this by 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400   8) creating templated applications that employd data structures
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400   9) that have particular c like structure layouts. Based on the
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  10) assumptions about the memory layout of the data structures
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  11) notJSON is able to efficient send, receieve, pack and unpack
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  12) binaries of data corresponding to predefinded message. The tool
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  13) is not able to anticipate how to create such a data structure
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  14) in every programming language, thus if it is desire that the 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  15) tool is extended to another programming language the
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  16) corresponding data structures need to be implemented by someone
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  17) else. 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  18) 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  19) This is where one who wishes to add a new language to the tool
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  20) will need to create their own file.
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  21) 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  22) For example consider the xml schema file: 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  23) 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  24) ```
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  25) <?xml version="1.0" encoding="UTF-8"?>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  26) <schema version="1.0.0">
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  27)   <messages>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  28)     <message name="reaction">
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  29)       <fields>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  30)         <field type="string" required="true">emoji</field>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  31)         <field type="i32" default="0">count</field>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  32)       </fields>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  33)     </message>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  34)     <message name="chat_message">
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  35)       <fields>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  36)         <field type="string" required="true">author</field>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  37)         <field type="timestamp" required="true">message_sent</field>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  38)         <field type="i32">likes</field>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  39)         <field type="string" required="true">body</field>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  40)         <field type="reaction[]">reactions</field>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  41)       </fields>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  42)     </message>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  43)   </messages>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  44)   <procedures>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  45)     <procedure name="send_message">
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  46)       <description>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  47)         Submits a new chat message along with the users authentication token.
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  48)       </description>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  49)       <parameters>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  50)         <field type="chat_message" required="true">message</field>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  51)         <field type="string" required="true">auth_token</field>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  52)       </parameters>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  53)       <returns>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  54)         <field type="boolean">success</field>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  55)       </returns>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  56)     </procedure>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  57)     <procedure name="get_messages">
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  58)       <description>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  59)         Get the latest `Count` messages from the server, requires a users
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  60)         authentication token.
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  61)         `Count` defaults to 10 messages.
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  62)       </description>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  63)       <parameters>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  64)         <field type="i32">count</field>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  65)         <field type="string" required="true">auth_token</field>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  66)       </parameters>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  67)       <returns>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  68)         <field type="chat_message[]">messages</field>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  69)       </returns>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  70)     </procedure>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  71)   </procedures>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  72) </schema>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  73) ```
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  74) 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  75) 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  76) This xml file specifies a specific kind of message. This
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  77) message has a specific layout. In C the message would
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  78) resemble the following struct:
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  79) 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  80) ```
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  81) typedef struct reaction {
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  82)       string emoji;
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  83)       i32 count;
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  84) } reaction;
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  85) 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  86) typedef struct chat_message {
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  87)       string author;
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  88)       timestamp message_sent;
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  89)       i32 likes;
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  90)       string body;
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  91)       reaction* reactions;
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  92)       size_t reactions_count;
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  93) } chat_message;
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  94) ```
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  95) 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  96) 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  97) In order to generate bolerplate python code that would 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  98) contain a data structure that is compatible with this
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  99) c struct the following jinja code could be used:
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 100) 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 101) ```
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 102) typedict = {
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 103)     'i32' : ctypes.c_int32,
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 104)     'string' : ctypes.c_uint64,
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 105) }
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 106) 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 107) {% for message in messages -%}
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 108) @dataclass
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 109) class {{ message.name }} :
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 110)   {% for field in message.fields %}
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 111)     {% if field.array %}
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 112)     list : typedict[ '{{ field.type_field }}' ]
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 113)     {{ field.name}} : ctypes.c_size_t 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 114)     {% else %}
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 115)     {{ field.name }} : typedict[ '{{ field.type_field }}' ] 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 116)     {% endif %}
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 117)   {% endfor %}
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 118) 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 119) {% endfor %}
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 120) ```
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 121) 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 122) This jinja template code would result in this python file :
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 123) 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 124) ```
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 125) typedict = {
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 126)     'i32' : ctypes.c_int32,
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 127)     'string' : ctypes.c_uint64,
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 128) }
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 129) 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 130) @dataclass
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 131) class reaction :
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 132)     emoji : typedict[ 'string' ] 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 133)     count : typedict[ 'i32' ] 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 134) 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 135) @dataclass
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 136) class chat_message :
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 137)     author : typedict[ 'string' ] 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 138)     message_sent : typedict[ 'timestamp' ] 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 139)     likes : typedict[ 'i32' ] 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 140)     body : typedict[ 'string' ] 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 141)     list : typedict[ 'reaction' ]
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 142)     reactions : ctypes.c_size_t 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 143) 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 144) ```
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 145) 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 146) In order to implement another programming language
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 147) than python the user would need to determine what data 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 148) structure would be fitting, then write a jinja template
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 149) that could create this boilerplate instance of the 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 150) data structure based on a random type of message                                                                                                                     <- 10:47PM
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400   1) # New Language Tutorial
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400   2)
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400   3) The purpose of this documentation is to create a guide so
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400   4) that outlines the steps necessary in order to add support
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400   5) for new langauges to the notJSON tool. The notJSON tool
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400   6) is intended to simplify the process of creating efficient
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400   7) client-server applications. The tool accomplishes this by
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400   8) creating templated applications that employd data structures
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400   9) that have particular c like structure layouts. Based on the
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  10) assumptions about the memory layout of the data structures
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  11) notJSON is able to efficient send, receieve, pack and unpack
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  12) binaries of data corresponding to predefinded message. The tool
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  13) is not able to anticipate how to create such a data structure
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  14) in every programming language, thus if it is desire that the
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  15) tool is extended to another programming language the
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  16) corresponding data structures need to be implemented by someone
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  17) else.
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  18)
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  19) This is where one who wishes to add a new language to the tool
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  20) will need to create their own file.
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  21)
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  22) For example consider the xml schema file:
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  23)
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  24) ```
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  25) <?xml version="1.0" encoding="UTF-8"?>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  26) <schema version="1.0.0">
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  27)   <messages>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  28)     <message name="reaction">
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  29)       <fields>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  30)         <field type="string" required="true">emoji</field>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  31)         <field type="i32" default="0">count</field>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  32)       </fields>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  33)     </message>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  34)     <message name="chat_message">
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  35)       <fields>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  36)         <field type="string" required="true">author</field>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  37)         <field type="timestamp" required="true">message_sent</field>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  38)         <field type="i32">likes</field>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  39)         <field type="string" required="true">body</field>
+b61aab3c (Mikolaj Jakowski 2024-10-11 19:50:25 -0400  1) # Test file to test binary packing of a specfic message in python
+b61aab3c (Mikolaj Jakowski 2024-10-11 19:50:25 -0400  2) # The goal of this program is to test the 2 different binary packing
+b61aab3c (Mikolaj Jakowski 2024-10-11 19:50:25 -0400  3) # methods Miko found. The 2 methods are using the struct library (option 1)
+b61aab3c (Mikolaj Jakowski 2024-10-11 19:50:25 -0400  4) # and using the cstruct library (option 2)
+b61aab3c (Mikolaj Jakowski 2024-10-11 19:50:25 -0400  5)
+b61aab3c (Mikolaj Jakowski 2024-10-11 19:50:25 -0400  6) import struct
+b61aab3c (Mikolaj Jakowski 2024-10-11 19:50:25 -0400  7) import cstruct
+b61aab3c (Mikolaj Jakowski 2024-10-11 19:50:25 -0400  8)
+b61aab3c (Mikolaj Jakowski 2024-10-11 19:50:25 -0400  9) struct_string = """
+b61aab3c (Mikolaj Jakowski 2024-10-11 19:50:25 -0400 10)     struct reaction{
+b61aab3c (Mikolaj Jakowski 2024-10-11 19:50:25 -0400 11)         uint64_t emoji;
+b61aab3c (Mikolaj Jakowski 2024-10-11 19:50:25 -0400 12)         int32_t count;
+b61aab3c (Mikolaj Jakowski 2024-10-11 19:50:25 -0400 13)     }
+b61aab3c (Mikolaj Jakowski 2024-10-11 19:50:25 -0400 14) """
+b61aab3c (Mikolaj Jakowski 2024-10-11 19:50:25 -0400 15)
+b61aab3c (Mikolaj Jakowski 2024-10-11 19:50:25 -0400 16) # class definition for method 2
+b61aab3c (Mikolaj Jakowski 2024-10-11 19:50:25 -0400 17) class reaction(cstruct.MemCStruct):
+b61aab3c (Mikolaj Jakowski 2024-10-11 19:50:25 -0400 18)     #########################
+b61aab3c (Mikolaj Jakowski 2024-10-11 19:50:25 -0400 19)     # WEIRD BEHAVIOR:
+b61aab3c (Mikolaj Jakowski 2024-10-11 19:50:25 -0400 20)     # for some reason you have
+b61aab3c (Mikolaj Jakowski 2024-10-11 19:50:25 -0400 21)     # to specify the byte_order as little endian
+b61aab3c (Mikolaj Jakowski 2024-10-11 19:50:25 -0400 22)     # or you will encounter unexpected behavior
+b61aab3c (Mikolaj Jakowski 2024-10-11 19:50:25 -0400 23)     # where the size of each element of the struct
+b61aab3c (Mikolaj Jakowski 2024-10-11 19:50:25 -0400 24)     # is set to the largest element. You cant specify
+b61aab3c (Mikolaj Jakowski 2024-10-11 19:50:25 -0400 25)     # native order either since the problem persists.
+b61aab3c (Mikolaj Jakowski 2024-10-11 19:50:25 -0400 26)     # You can see this by printing the binary string with and
+b61aab3c (Mikolaj Jakowski 2024-10-11 19:50:25 -0400 27)     # without the __byte_order__ set. Would appreciate if someone
+b61aab3c (Mikolaj Jakowski 2024-10-11 19:50:25 -0400 28)     # else could take a look at and see what is going it
+b61aab3c (Mikolaj Jakowski 2024-10-11 19:50:25 -0400 29)     ########################
+b61aab3c (Mikolaj Jakowski 2024-10-11 19:50:25 -0400 30)     __byte_order__ = cstruct.LITTLE_ENDIAN
+b61aab3c (Mikolaj Jakowski 2024-10-11 19:50:25 -0400 31)     __def__ = struct_string
+b61aab3c (Mikolaj Jakowski 2024-10-11 19:50:25 -0400 32)
+b61aab3c (Mikolaj Jakowski 2024-10-11 19:50:25 -0400 33)
+b61aab3c (Mikolaj Jakowski 2024-10-11 19:50:25 -0400 34)
+b61aab3c (Mikolaj Jakowski 2024-10-11 19:50:25 -0400 35)
+b61aab3c (Mikolaj Jakowski 2024-10-11 19:50:25 -0400 36) # In order to test these 2 methods we have to test how they would work
+b61aab3c (Mikolaj Jakowski 2024-10-11 19:50:25 -0400 37) # if we attempted to pack a specific test example into a binary form.
+b61aab3c (Mikolaj Jakowski 2024-10-11 19:50:25 -0400 38) # We choose the reaction message specified in the schema XML and basic.c
+b61aab3c (Mikolaj Jakowski 2024-10-11 19:50:25 -0400 39) # as the specific instance of a message that we will try to pack into
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400   1) # New Language Tutorial
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400   2) 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400   3) The purpose of this documentation is to create a guide so
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400   4) that outlines the steps necessary in order to add support
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400   5) for new langauges to the notJSON tool. The notJSON tool
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400   6) is intended to simplify the process of creating efficient
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400   7) client-server applications. The tool accomplishes this by 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400   8) creating templated applications that employd data structures
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400   9) that have particular c like structure layouts. Based on the
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  10) assumptions about the memory layout of the data structures
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  11) notJSON is able to efficient send, receieve, pack and unpack
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  12) binaries of data corresponding to predefinded message. The tool
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  13) is not able to anticipate how to create such a data structure
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  14) in every programming language, thus if it is desire that the 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  15) tool is extended to another programming language the
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  16) corresponding data structures need to be implemented by someone
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  17) else. 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  18) 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  19) This is where one who wishes to add a new language to the tool
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  20) will need to create their own file.
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  21) 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  22) For example consider the xml schema file: 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  23) 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  24) ```
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  25) <?xml version="1.0" encoding="UTF-8"?>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  26) <schema version="1.0.0">
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  27)   <messages>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  28)     <message name="reaction">
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  29)       <fields>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  30)         <field type="string" required="true">emoji</field>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  31)         <field type="i32" default="0">count</field>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  32)       </fields>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  33)     </message>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  34)     <message name="chat_message">
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  35)       <fields>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  36)         <field type="string" required="true">author</field>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  37)         <field type="timestamp" required="true">message_sent</field>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  38)         <field type="i32">likes</field>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  39)         <field type="string" required="true">body</field>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  40)         <field type="reaction[]">reactions</field>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  41)       </fields>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  42)     </message>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  43)   </messages>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  44)   <procedures>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  45)     <procedure name="send_message">
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  46)       <description>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  47)         Submits a new chat message along with the users authentication token.
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  48)       </description>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  49)       <parameters>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  50)         <field type="chat_message" required="true">message</field>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  51)         <field type="string" required="true">auth_token</field>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  52)       </parameters>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  53)       <returns>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  54)         <field type="boolean">success</field>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  55)       </returns>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  56)     </procedure>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  57)     <procedure name="get_messages">
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  58)       <description>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  59)         Get the latest `Count` messages from the server, requires a users
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  60)         authentication token.
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  61)         `Count` defaults to 10 messages.
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  62)       </description>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  63)       <parameters>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  64)         <field type="i32">count</field>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  65)         <field type="string" required="true">auth_token</field>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  66)       </parameters>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  67)       <returns>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  68)         <field type="chat_message[]">messages</field>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  69)       </returns>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  70)     </procedure>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  71)   </procedures>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  72) </schema>
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  73) ```
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  74) 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  75) 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  76) This xml file specifies a specific kind of message. This
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  77) message has a specific layout. In C the message would
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  78) resemble the following struct:
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  79) 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  80) ```
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  81) typedef struct reaction {
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  82)       string emoji;
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  83)       i32 count;
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  84) } reaction;
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  85) 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  86) typedef struct chat_message {
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  87)       string author;
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  88)       timestamp message_sent;
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  89)       i32 likes;
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  90)       string body;
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  91)       reaction* reactions;
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  92)       size_t reactions_count;
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  93) } chat_message;
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  94) ```
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  95) 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  96) 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  97) In order to generate bolerplate python code that would 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  98) contain a data structure that is compatible with this
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400  99) c struct the following jinja code could be used:
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 100) 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 101) ```
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 102) typedict = {
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 103)     'i32' : ctypes.c_int32,
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 104)     'string' : ctypes.c_uint64,
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 105) }
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 106) 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 107) {% for message in messages -%}
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 108) @dataclass
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 109) class {{ message.name }} :
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 110)   {% for field in message.fields %}
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 111)     {% if field.array %}
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 112)     list : typedict[ '{{ field.type_field }}' ]
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 113)     {{ field.name}} : ctypes.c_size_t 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 114)     {% else %}
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 115)     {{ field.name }} : typedict[ '{{ field.type_field }}' ] 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 116)     {% endif %}
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 117)   {% endfor %}
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 118) 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 119) {% endfor %}
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 120) ```
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 121) 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 122) This jinja template code would result in this python file :
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 123) 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 124) ```
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 125) typedict = {
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 126)     'i32' : ctypes.c_int32,
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 127)     'string' : ctypes.c_uint64,
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 128) }
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 129) 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 130) @dataclass
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 131) class reaction :
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 132)     emoji : typedict[ 'string' ] 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 133)     count : typedict[ 'i32' ] 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 134) 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 135) @dataclass
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 136) class chat_message :
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 137)     author : typedict[ 'string' ] 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 138)     message_sent : typedict[ 'timestamp' ] 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 139)     likes : typedict[ 'i32' ] 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 140)     body : typedict[ 'string' ] 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 141)     list : typedict[ 'reaction' ]
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 142)     reactions : ctypes.c_size_t 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 143) 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 144) ```
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 145) 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 146) In order to implement another programming language
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 147) than python the user would need to determine what data 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 148) structure would be fitting, then write a jinja template
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 149) that could create this boilerplate instance of the 
+37deb920 (Mikolaj Jakowski 2024-10-11 22:10:00 -0400 150) data structure based on a random type of message
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400  1) from dataclasses import dataclass
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400  2) import ctypes
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400  3) import requests
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400  4) import struct
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400  5) 
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400  6) typedict = {
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400  7)     'i32' : ctypes.c_int32,
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400  8)     'string' : ctypes.c_uint64,
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400  9) }
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400 10) 
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400 11) {% for message in messages -%}
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400 12) @dataclass
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400 13) class {{ message.name }} :
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400 14)   {% for field in message.fields %}
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400 15)     {% if field.array %}
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400 16)     list : typedict[ '{{ field.type_field }}' ]
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400 17)     {{ field.name}} : ctypes.c_size_t 
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400 18)     {% else %}
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400 19)     {{ field.name }} : typedict[ '{{ field.type_field }}' ] 
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400 20)     {% endif %}
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400 21)   {% endfor %}
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400 22) 
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400 23) {% endfor %}
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400 24) 
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400 25) def main():
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400 26)     print("hello")
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400 27) 
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400 28)     #make example http get request
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400 29)     x = requests.get('https://google.com')
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400 30)     print('Google get request status code: ')
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400 31)     print(x.status_code)
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400 32) 
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400 33) 
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400 34)     # use method 1 (sruct library) to print a binary blob of filler
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400 35)     # data for the reaction dataclass
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400 36)     print(struct.pack('<Ql', 6, 1023))
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400 37) 
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400 38)     r = reaction(emoji = 1, count =2)
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400 39) 
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400 40) if __name__ == '__main__':
+e4266611 (Mikolaj Jakowski 2024-10-11 21:52:03 -0400 41)     main()
+
