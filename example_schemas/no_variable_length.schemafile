@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema version="1.0.0">
+  <messages>
+    <message name="operation_msg">
+      <fields>
+        <field type="char" required="true">operation</field>
+        <field type="i32" required="true">operand_one</field>
+        <field type="i32" required="true">operand_two</field>
+      </fields>
+    </message>
+  </messages>
+</schema>
