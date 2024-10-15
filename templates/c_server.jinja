@@ -1,6 +1,8 @@
 #include <stdint.h>
+#include <string.h>
 #include <stdbool.h>
 #include <time.h>
+#include <stdlib.h>
 
 typedef char* string;
 typedef int64_t i64;
@@ -15,15 +17,105 @@ typedef time_t timestamp;
 typedef bool boolean;
 
 {% for message in messages -%}
+#define {{ message.name.upper() }}_PACKED_SIZE {{ message.base_size }}
   typedef struct {{ message.name }} {
   {% for field in message.fields %}
     {% if field.array %}
       {{ field.type_field }}* {{ field.name }};
       size_t {{ field.name}}_count;
+    {% elif field.padding %}
     {% else %}
       {{ field.type_field }} {{ field.name }};
     {% endif %}
   {% endfor %}
-} {{message.name}};
+  } {{message.name}};
 
+{% endfor %}
+
+{% for message in messages -%}
+  size_t {{ message.name }}_pack(const {{ message.name }}* struct_{{ message.name }}, u8** out) {
+  {% set has_array_fields = namespace(value=False) %}
+  {% for field in message.fields %}
+    {% if field.array %}
+      {% set has_array_fields.value = True %}
+    {% endif %}
+  {% endfor %}
+
+  {% if has_array_fields.value %}
+  size_t variable_space = 0;
+  {% endif %}
+
+
+  {% for field in message.fields %}
+    {% if field.array %}
+      {% if field != message.fields[0] and primitive_mapping[field.type_field].value != 1 %}
+        variable_space += sizeof({{ field.type_field }}) - (variable_space % sizeof({{ field.type_field }}));
+      {% endif %}
+      variable_space += struct_{{ message.name }}->{{ field.name }}_count * sizeof({{ field.type_field }});
+    {% endif %}
+  {% endfor %}
+  if (!*out) {
+  {% if has_array_fields.value %}
+    *out = calloc(1, {{ message.name.upper() }}_PACKED_SIZE + variable_space);
+  {% else %}
+    *out = calloc(1, {{ message.name.upper() }}_PACKED_SIZE);
+  {% endif %}
+  }
+
+  variable_space = {{ message.name.upper() }}_PACKED_SIZE;
+
+  {% set current_offset = namespace(value=0) %}
+  {% for field in message.fields %}
+    {% if not field.padding %}
+      // {{ field.name }}
+      {% if field.array %}
+        {% if primitive_mapping[field.type_field].value != 1 %}
+          variable_space += sizeof({{ field.type_field }}) - (variable_space % sizeof({{ field.type_field }}));
+        {% endif %}
+        memcpy(*out + variable_space, struct_{{ message.name }}->{{ field.name }}, struct_{{ message.name }}->{{ field.name }}_count * sizeof(*struct_{{ message.name }}->{{ field.name }}));
+        *(u32*)(*out + {{ current_offset.value }}) = variable_space;
+        *(u32*)(*out + {{ current_offset.value }} + 4) = struct_{{ message.name }}->{{ field.name }}_count;
+        variable_space += struct_{{ message.name }}->{{ field.name }}_count * sizeof(*struct_{{ message.name }}->{{ field.name }});
+      {% else %}
+        memcpy(*out + {{ current_offset.value }}, &struct_{{ message.name }}->{{ field.name }}, {{ field.size }});
+      {% endif %}
+    {% endif %}
+    {% set current_offset.value = current_offset.value + field.size %}
+  {% endfor %}
+
+  return variable_space;
+  }
+
+  {% set current_offset.value = 0 %}
+  {% for field in message.fields %}
+    {% if not field.padding %}
+      {% if field.array %}
+        {{ field.type_field }}* get_{{message.name}}_{{ field.name }}(const u8* message) {
+        return ({{ field.type_field }}*)(message + *(u32*)(message + {{ current_offset.value }}));
+        }
+        u32 get_{{message.name}}_{{field.name}}_length(const u8* message) {
+        return *(u32*)(message + {{ current_offset.value }} + 4);
+        }
+      {% else %}
+        {{ field.type_field }} get_{{message.name}}_{{ field.name }}(const u8* message) {
+        return *({{field.type_field}}*)(message + {{ current_offset.value }});
+        }
+      {% endif %}
+    {% endif %}
+    {% set current_offset.value = current_offset.value + field.size %}
+
+  {% endfor %}
+
+  {{ message.name }} {{ message.name }}_unpack(const u8* message) {
+  return ({{ message.name }}){
+  {% for field in message.fields %}
+    {% if not field.padding %}
+      .{{ field.name }} = get_{{ message.name }}_{{ field.name }}(message),
+      {% if field.array %}
+        .{{ field.name }}_count = get_{{ message.name }}_{{field.name}}_length(message),
+      {% endif %}
+    {% endif %}
+  {% endfor %}
+  };
+  }
 {% endfor %}

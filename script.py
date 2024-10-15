@@ -55,7 +55,9 @@ class Field:
     default_val: str
     type_field: str
     name: str
+    size: int = 0
     array: bool = False
+    padding: bool = False
 
 @dataclass
 class Message:
@@ -73,6 +75,9 @@ class Procedure:
 #extract messages
 def extract_messages(parsed_xml) -> List[Message]:
     messages = parsed_xml['schema']['messages']['message']
+    if not isinstance(messages, list):
+        messages = [messages]
+
     message_data = []
 
     for message in messages:
@@ -116,15 +121,17 @@ def extract_messages(parsed_xml) -> List[Message]:
 
 #extract procedures
 def extract_procedures(parsed_xml: Any) -> List[Procedure]:
-    procedures = parsed_xml['schema']['procedures']['procedure']
+    try:
+        procedures = parsed_xml['schema']['procedures']['procedure']
+    except KeyError:
+        procedures = []
+
     procedure_data = []
 
     #loop through the procedures provided in the xml code
     for procedure in procedures:
         procedure_name = procedure['@name'] #extract procedure name
         description = procedure['description']
-
-        #procedure_info = {'parameters': [], 'returns': []}
 
         #extract parameters
         parameters = procedure['parameters']['field']
@@ -244,6 +251,88 @@ def has_circular_deps(messages: List[Message]):
     print("Circular Dependencies: " + " <-> ".join(circular_deps))
     return True
 
+def message_size(message: Message, custom_sizes: Dict[str, int]) -> int:
+    total_size = 0
+    for field in message.fields:
+        if field.array:
+            field.size = 8
+            total_size += 8
+        elif field.type_field in primitive_mapping:
+            field.size = primitive_mapping[field.type_field].value
+            total_size += primitive_mapping[field.type_field].value
+        else:
+            if field.type_field not in custom_sizes:
+                return 0
+            total_size += custom_sizes[field.type_field]
+            field.size = custom_sizes[field.type_field]
+
+    custom_sizes[message.name] = total_size
+    return total_size
+
+def messages_size(messages: List[Message]):
+    custom_sizes: Dict[str, int] = {}
+    while any(m.base_size == 0 for m in messages):
+        for message in messages:
+            total_size = message_size(message, custom_sizes)
+            if total_size == 0:
+                continue
+            message.base_size = total_size
+
+def new_padding(size: int) -> Field:
+    return Field(
+        required = False,
+        default_val = "",
+        type_field = "padding",
+        name = "padding",
+        size = size,
+        array = False,
+        padding = True
+    )
+
+
+def sort_messages(messages: List[Message]):
+    # Walk through each message and sort its fields by size
+    for message in messages:
+        message.fields.sort(reverse=True, key = lambda field: field.size)
+        new_field_arrangement: List[Field] = []
+
+        longest_field = min(8, max(f.size for f in message.fields))
+
+        row_size = 0
+        for field in message.fields:
+            if field.size < 8 and row_size + field.size > longest_field:
+                # we have exceeded the row length limit
+                new_field_arrangement.append(new_padding(longest_field - row_size))
+                row_size = 0
+            if row_size % min(8, field.size) != 0:
+                # we fit, now align to a multiple of our size
+                padding_needed = min(8, field.size - (row_size % field.size))
+                if row_size + padding_needed > longest_field:
+                    # we will overflow, just pad out to the end of the line
+                    new_field_arrangement.append(new_padding(longest_field - row_size))
+                    row_size = 0
+                else:
+                    new_field_arrangement.append(new_padding(padding_needed))
+                    row_size += padding_needed
+                    row_size %= longest_field
+
+            if field.size < 8 and row_size + field.size > longest_field:
+                new_field_arrangement.append(new_padding(longest_field - row_size))
+                row_size = 0
+
+            new_field_arrangement.append(field)
+            row_size += field.size
+            row_size %= longest_field
+
+        if row_size % longest_field != 0:
+            new_field_arrangement.append(new_padding(longest_field - row_size))
+
+        new_field_arrangement = filter(lambda field: field.size != 0, new_field_arrangement)
+        message.fields = [*new_field_arrangement]
+        message.base_size = sum(f.size for f in message.fields)
+
+    return
+
 def read_file(filename: str):
     with open(filename, 'r') as file:
         content: str = file.read()
@@ -270,9 +359,13 @@ def main(schemafile: str, template_file: str, output_file: str):
         print('Your schemafile contains circular dependencies!')
         exit()
 
+    messages_size(message_data)
+    sort_messages(message_data)
+
     template = environment.get_template(template_file)
     context = {
-        "messages": message_data
+        "messages": message_data,
+        "primitive_mapping": primitive_mapping
     }
 
     output: str = template.render(context)
