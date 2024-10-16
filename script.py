@@ -47,7 +47,7 @@ primitive_mapping = {
 class Metadata:
     message_identifier: int
     version_number: int
-    optionals_bitfield: List[bool]
+    optionals_count: int = 0
 
 @dataclass
 class Field:
@@ -64,6 +64,7 @@ class Message:
     name: str
     base_size: int
     fields: list[Field]
+    metadata: Metadata
 
 @dataclass
 class Procedure:
@@ -115,7 +116,13 @@ def extract_messages(parsed_xml) -> List[Message]:
 
             field_names.append(field_object)
         
-        message_data.append(Message(name = message_name, base_size = 0, fields = field_names))
+        message_data.append(Message(name = message_name,
+                                    base_size = 0,
+                                    fields = field_names,
+                                    metadata =
+                                        Metadata(message_identifier = len(message_data),
+                                                 version_number = 0,
+                                                 optionals_count = sum(1 for field in field_names if not field.required))))
 
     return message_data
 
