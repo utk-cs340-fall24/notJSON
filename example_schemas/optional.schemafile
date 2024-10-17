@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema version="1.0.0">
+  <messages>
+    <message name="operation_msg">
+      <fields>
+        <field type="i32" required="faluse">num</field>
+        <field type="char[]" required="true">name</field>
+        <field type="char[]" required="false">greeting</field>
+      </fields>
+    </message>
+  </messages>
+</schema>
