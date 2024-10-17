@@ -13,6 +13,25 @@ from dataclasses import dataclass
 import ctypes
 import requests
 import struct
+from typing import TypeAlias
+
+#typedef char * string;
+#typedef int64_t i64;
+#typedef uint64_t u64;
+#typedef int32_t i32;
+#typedef uint32_t u32;
+#typedef int16_t i16;
+#typedef uint16_t u16;
+#typedef int8_t i8;
+#typedef uint8_t u8;
+#typedef time_t timestamp;
+#typedef bool boolean;
+
+string : TypeAlias = str
+char : TypeAlias = str
+i64 : TypeAlias = ctypes.c_int64
+u32 : TypeAlias = ctypes.c_uint32
+size_t : TypeAlias = ctypes.c_size_t
 
 typedict = {
     'i32' : ctypes.c_int32,
@@ -20,11 +39,29 @@ typedict = {
 }
 
 
+#@dataclass
+#class reaction:
+    ##emoji : ctypes.c_uint64
+    #emoji : typedict['string']
+    #count : typedict['i32']
+
+#typedef struct operation_msg {
+  #random_chars : list[char]
+  #size_t random_chars_count;
+  #u32 * operands;
+  #size_t operands_count;
+  #char operation;
+#}
+
 @dataclass
-class reaction:
-    #emoji : ctypes.c_uint64
-    emoji : typedict['string']
-    count : typedict['i32']
+class operation_msg:
+    random_chars : list[char]
+    #random_chars_count : size_t
+    operands : list[u32]
+    #operands_count : size_t
+    operation : char
+
+
 
 def main():
     print("hello")
@@ -37,9 +74,11 @@ def main():
 
     # use method 1 (sruct library) to print a binary blob of filler
     # data for the reaction dataclass
-    print(struct.pack('<Ql', 6, 1023))
+    #print(struct.pack('<Ql', 6, 1023))
 
-    r = reaction(emoji = 1, count =2)
+    op = operation_msg(['a'], [1], 'b')
+
+    print(op.operation)
 
 if __name__ == '__main__':
     main()

@@ -2,21 +2,33 @@ from dataclasses import dataclass
 import ctypes
 import requests
 import struct
+from typing import TypeAlias
 
-typedict = {
-    'i32' : ctypes.c_int32,
-    'string' : ctypes.c_uint64,
-}
+string : TypeAlias = str
+char : TypeAlias = str
+i64 : TypeAlias = ctypes.c_int64
+u64 : TypeAlias = ctypes.c_uint64
+i32 : TypeAlias = ctypes.c_int32
+u32 : TypeAlias = ctypes.c_uint32
+i16 : TypeAlias = ctypes.c_int16
+u16 : TypeAlias = ctypes.c_uint16
+i8 : TypeAlias = ctypes.c_int8
+u8 : TypeAlias = ctypes.c_uint8
+size_t : TypeAlias = ctypes.c_size_t
+
+
+
 
 {% for message in messages -%}
 @dataclass
 class {{ message.name }} :
   {% for field in message.fields %}
     {% if field.array %}
-    list : typedict[ '{{ field.type_field }}' ]
-    {{ field.name}} : ctypes.c_size_t 
+    {{field.name}} : list[{{ field.type_field}}] 
     {% else %}
-    {{ field.name }} : typedict[ '{{ field.type_field }}' ] 
+    {% if field.name != "padding" %}
+    {{ field.name }} : {{ field.type_field }}
+    {% endif %}
     {% endif %}
   {% endfor %}
 
@@ -33,9 +45,11 @@ def main():
 
     # use method 1 (sruct library) to print a binary blob of filler
     # data for the reaction dataclass
-    print(struct.pack('<Ql', 6, 1023))
+    #print(struct.pack('<Ql', 6, 1023))
 
-    r = reaction(emoji = 1, count =2)
+    op = operation_msg(['a'], [1], 'b')
+
+    print(op.operation)
 
 if __name__ == '__main__':
     main()
