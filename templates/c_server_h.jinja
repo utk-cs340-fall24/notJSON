@@ -1,0 +1,57 @@
+#include <stdint.h>
+#include <string.h>
+#include <stdbool.h>
+#include <time.h>
+#include <stdlib.h>
+
+typedef char* string;
+typedef int64_t i64;
+typedef uint64_t u64;
+typedef int32_t i32;
+typedef uint32_t u32;
+typedef int16_t i16;
+typedef uint16_t u16;
+typedef int8_t i8;
+typedef uint8_t u8;
+typedef time_t timestamp;
+typedef bool boolean;
+
+{% for message in messages -%}
+#define {{ message.name.upper() }}_PACKED_SIZE {{ message.base_size }}
+  typedef struct {{ message.name }} {
+  {% for field in message.fields %}
+    {% if field.array %}
+      {{ field.type_field }}* {{ field.name }};
+      size_t {{ field.name}}_count;
+    {% elif field.padding %}
+    {% else %}
+      {{ field.type_field }} {{ field.name }};
+    {% endif %}
+    {% if not field.required and not field.padding%}
+      bool {{ field.name }}_present;
+    {% endif %}
+  {% endfor %}
+  } {{message.name}};
+
+{% endfor %}
+
+{% for message in messages -%}
+  size_t {{ message.name }}_pack(const {{ message.name }}* struct_{{ message.name }}, u8** out);
+
+  {% for field in message.fields %}
+    {% if not field.padding %}
+      {% if field.array %}
+        {{ field.type_field }}* get_{{message.name}}_{{ field.name }}(const u8* message);
+        u32 get_{{message.name}}_{{field.name}}_length(const u8* message);
+      {% else %}
+        {{ field.type_field }} get_{{message.name}}_{{ field.name }}(const u8* message);
+      {% endif %}
+      {% if not field.required %}
+        bool get_{{ message.name }}_{{ field.name }}_present(const u8* message);
+      {% endif %}
+    {% endif %}
+
+  {% endfor %}
+
+  {{ message.name }} {{ message.name }}_unpack(const u8* message);
+{% endfor %}
