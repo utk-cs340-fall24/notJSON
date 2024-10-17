@@ -5,6 +5,9 @@ tmp/
 venv/
 output/
 
+commits.txt
+blame-tracker.py
+
 *.py[cod]
 *.egg
 build

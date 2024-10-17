@@ -3,7 +3,7 @@
   <messages>
     <message name="operation_msg">
       <fields>
-        <field type="i32" required="faluse">num</field>
+        <field type="i32" required="false">num</field>
         <field type="char[]" required="true">name</field>
         <field type="char[]" required="false">greeting</field>
       </fields>

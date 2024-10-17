@@ -133,6 +133,9 @@ def extract_procedures(parsed_xml: Any) -> List[Procedure]:
     except KeyError:
         procedures = []
 
+    if not isinstance(procedures, list):
+        procedures = [procedures]
+
     procedure_data = []
 
     #loop through the procedures provided in the xml code
@@ -372,7 +375,9 @@ def main(schemafile: str, template_file: str, output_file: str):
     template = environment.get_template(template_file)
     context = {
         "messages": message_data,
-        "primitive_mapping": primitive_mapping
+        "primitive_mapping": primitive_mapping,
+        "output_file": output_file,
+        "procedures": procedure_data
     }
 
     output: str = template.render(context)

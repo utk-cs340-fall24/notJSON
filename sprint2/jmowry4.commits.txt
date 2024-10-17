@@ -1,0 +1,717 @@
+client.c     (jackson mowry on 10/17/2024 at 18:56): #include "optional.h"
+client.c     (jackson mowry on 10/17/2024 at 18:56): #include <fcntl.h>
+client.c     (jackson mowry on 10/17/2024 at 18:56): #include <stdint.h>
+client.c     (jackson mowry on 10/17/2024 at 18:56): #include <stdio.h>
+client.c     (jackson mowry on 10/17/2024 at 18:56): #include <stdlib.h>
+client.c     (jackson mowry on 10/17/2024 at 18:56): #include <sys/stat.h>
+client.c     (jackson mowry on 10/17/2024 at 18:56): #include <sys/types.h>
+client.c     (jackson mowry on 10/17/2024 at 18:56): #include <unistd.h>
+client.c     (jackson mowry on 10/17/2024 at 18:56): #define FIFO_PATH "myfifo"
+client.c     (jackson mowry on 10/17/2024 at 18:56): #define BUFFER_SIZE 1024
+client.c     (jackson mowry on 10/17/2024 at 18:56): int main() {
+client.c     (jackson mowry on 10/17/2024 at 18:56):   uint8_t buffer[BUFFER_SIZE];
+client.c     (jackson mowry on 10/17/2024 at 18:56):   uint8_t *response = NULL;
+client.c     (jackson mowry on 10/17/2024 at 18:56):   // Open the FIFO for reading (blocking)
+client.c     (jackson mowry on 10/17/2024 at 18:56):   int fd = open(FIFO_PATH, O_RDONLY);
+client.c     (jackson mowry on 10/17/2024 at 18:56):   if (fd == -1) {
+client.c     (jackson mowry on 10/17/2024 at 18:56):     perror("Failed to open FIFO for reading");
+client.c     (jackson mowry on 10/17/2024 at 18:56):     exit(EXIT_FAILURE);
+client.c     (jackson mowry on 10/17/2024 at 18:56):   }
+client.c     (jackson mowry on 10/17/2024 at 18:56):   // Receive data from the writer
+client.c     (jackson mowry on 10/17/2024 at 18:56):   read(fd, buffer, BUFFER_SIZE);
+client.c     (jackson mowry on 10/17/2024 at 18:56):   operation_msg msg = operation_msg_unpack(buffer);
+client.c     (jackson mowry on 10/17/2024 at 18:56):   printf("Server sent: %.2s %s %s\n", msg.greeting, msg.name,
+client.c     (jackson mowry on 10/17/2024 at 18:56):          msg.num_present ? "Num present" : "Num optional");
+client.c     (jackson mowry on 10/17/2024 at 18:56):   // Open the FIFO for writing
+client.c     (jackson mowry on 10/17/2024 at 18:56):   fd = open(FIFO_PATH, O_WRONLY);
+client.c     (jackson mowry on 10/17/2024 at 18:56):   if (fd == -1) {
+client.c     (jackson mowry on 10/17/2024 at 18:56):     perror("Failed to open FIFO for writing");
+client.c     (jackson mowry on 10/17/2024 at 18:56):     exit(EXIT_FAILURE);
+client.c     (jackson mowry on 10/17/2024 at 18:56):   }
+client.c     (jackson mowry on 10/17/2024 at 18:56):   // Send response back to the writer
+client.c     (jackson mowry on 10/17/2024 at 18:56):   operation_msg om = {.greeting = "hi",
+client.c     (jackson mowry on 10/17/2024 at 18:56):                       .greeting_count = 3,
+client.c     (jackson mowry on 10/17/2024 at 18:56):                       .greeting_present = true,
+client.c     (jackson mowry on 10/17/2024 at 18:56):                       .num = 400,
+client.c     (jackson mowry on 10/17/2024 at 18:56):                       .num_present = true,
+client.c     (jackson mowry on 10/17/2024 at 18:56):                       .name = "Server",
+client.c     (jackson mowry on 10/17/2024 at 18:56):                       .name_count = strlen("Client") + 1};
+client.c     (jackson mowry on 10/17/2024 at 18:56):   size_t bytes = operation_msg_pack(&om, &response);
+client.c     (jackson mowry on 10/17/2024 at 18:56):   write(fd, response, bytes);
+client.c     (jackson mowry on 10/17/2024 at 18:56):   printf("Reader: Sent response\n");
+client.c     (jackson mowry on 10/17/2024 at 18:56):   // Close the writing end
+client.c     (jackson mowry on 10/17/2024 at 18:56):   close(fd);
+client.c     (jackson mowry on 10/17/2024 at 18:56):   free(response);
+client.c     (jackson mowry on 10/17/2024 at 18:56):   return 0;
+client.c     (jackson mowry on 10/17/2024 at 18:56): }
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53): #include <string.h>
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53): #include <stdlib.h>
+c_server.jinja (jackson mowry on 10/17/2024 at 18:56): #include "{{ output_file.split('/')[1].split('.')[0] }}.h"
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53): {% for message in messages -%}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):   size_t {{ message.name }}_pack(const {{ message.name }}* struct_{{ message.name }}, u8** out) {
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):   size_t metadata_size = sizeof(u8) + sizeof(u8) + (({{ message.metadata.optionals_count }} + 7) / 8) * sizeof(u8);
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):   ssize_t optional_index = 0;
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):   {% set has_array_fields = namespace(value=False) %}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):   {% for field in message.fields %}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):     {% if field.array %}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):       {% set has_array_fields.value = True %}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):     {% endif %}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):   {% endfor %}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):   {% if has_array_fields.value %}
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):     size_t variable_space = 0;
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):   {% endif %}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):   {% for field in message.fields %}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):     {% if field.array %}
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):       {% if not field.required %}
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):         if (struct_{{ message.name }}->{{ field.name }}_present) {
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):       {% endif %}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):       {% if field != message.fields[0] and primitive_mapping[field.type_field].value != 1 %}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):         variable_space += sizeof({{ field.type_field }}) - (variable_space % sizeof({{ field.type_field }}));
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):       {% endif %}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):       variable_space += struct_{{ message.name }}->{{ field.name }}_count * sizeof({{ field.type_field }});
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):       {% if not field.required %}
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):         }
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):       {% endif %}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):     {% endif %}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):   {% endfor %}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):   if (!*out) {
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):   {% if has_array_fields.value %}
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):     *out = calloc(1, {{ message.name.upper() }}_PACKED_SIZE + metadata_size + variable_space);
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):   {% else %}
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):     *out = calloc(1, {{ message.name.upper() }}_PACKED_SIZE + metadata_size);
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):   {% endif %}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):   }
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):   variable_space = {{ message.name.upper() }}_PACKED_SIZE + metadata_size;
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):   u8* optional = *out + 2;
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):   (*out)[0] = {{ message.metadata.message_identifier }};
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):   (*out)[1] = {{ message.metadata.version_number }};
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):   {% set current_offset = namespace(value=0) %}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):   {% for field in message.fields %}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):     {% if not field.padding %}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):       // {{ field.name }}
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):       {% if not field.required %}
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):         if (struct_{{ message.name }}->{{ field.name }}_present) {
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):         optional[optional_index / 8] |= (1 << optional_index % 8);
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):       {% endif %}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):       {% if field.array %}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):         {% if primitive_mapping[field.type_field].value != 1 %}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):           variable_space += sizeof({{ field.type_field }}) - (variable_space % sizeof({{ field.type_field }}));
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):         {% endif %}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):         memcpy(*out + variable_space, struct_{{ message.name }}->{{ field.name }}, struct_{{ message.name }}->{{ field.name }}_count * sizeof(*struct_{{ message.name }}->{{ field.name }}));
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):         *(u32*)(*out + {{ current_offset.value }} + metadata_size) = variable_space;
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):         *(u32*)(*out + {{ current_offset.value }} + 4 + metadata_size) = struct_{{ message.name }}->{{ field.name }}_count;
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):         variable_space += struct_{{ message.name }}->{{ field.name }}_count * sizeof(*struct_{{ message.name }}->{{ field.name }});
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):       {% else %}
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):         memcpy(*out + {{ current_offset.value }} + metadata_size, &struct_{{ message.name }}->{{ field.name }}, {{ field.size }});
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):       {% endif %}
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):       {% if not field.required %}
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):         } else {
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):         optional[optional_index / 8] &= ~(1 << optional_index % 8);
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):         }
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):         ++optional_index;
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):       {% endif %}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):     {% endif %}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):     {% set current_offset.value = current_offset.value + field.size %}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):   {% endfor %}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):   return variable_space;
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):   }
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):   {% set current_offset.value = 0 %}
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):   {% set current_optional = namespace(value = 0) %}
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):   {% set metadata_offset = 2 +(message.metadata.optionals_count + 7) // 8 %}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):   {% for field in message.fields %}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):     {% if not field.padding %}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):       {% if field.array %}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):         {{ field.type_field }}* get_{{message.name}}_{{ field.name }}(const u8* message) {
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):         return ({{ field.type_field }}*)(message + *(u32*)(message + {{ current_offset.value }} + {{ metadata_offset }}));
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):         }
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):         u32 get_{{message.name}}_{{field.name}}_length(const u8* message) {
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):         return *(u32*)(message + {{ current_offset.value }} + 4 + {{ metadata_offset }});
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):         }
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):       {% else %}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):         {{ field.type_field }} get_{{message.name}}_{{ field.name }}(const u8* message) {
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):         return *({{field.type_field}}*)(message + {{ current_offset.value }} + {{ metadata_offset }});
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):         }
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):       {% endif %}
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):       {% if not field.required %}
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):         bool get_{{ message.name }}_{{ field.name }}_present(const u8* message) {
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):         return ((message + 2)[{{ current_optional.value }} / 8] >> ({{ current_optional.value }} % 8)) & 0x1;
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):         }
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):         {% set current_optional.value = current_optional.value + 1 %}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):       {% endif %}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):     {% endif %}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):     {% set current_offset.value = current_offset.value + field.size %}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):   {% endfor %}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):   {{ message.name }} {{ message.name }}_unpack(const u8* message) {
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):   return ({{ message.name }}){
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):   {% for field in message.fields %}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):     {% if not field.padding %}
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):       {% if field.required %}
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):         .{{ field.name }} = get_{{ message.name }}_{{ field.name }}(message),
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):         {% if field.array %}
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):           .{{ field.name }}_count = get_{{ message.name }}_{{field.name}}_length(message),
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):         {% endif %}
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):       {% else %}
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):         .{{ field.name }} = get_{{message.name}}_{{field.name}}_present(message) ? get_{{ message.name }}_{{ field.name }}(message) : 0,
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):         {% if field.array %}
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):           .{{ field.name }}_count = get_{{message.name}}_{{field.name}}_present(message) ? get_{{ message.name }}_{{field.name}}_length(message) : 0,
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):         {% endif %}
+c_server.jinja (jackson mowry on 10/16/2024 at 19:38):         .{{ field.name }}_present = get_{{message.name}}_{{field.name}}_present(message),
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):       {% endif %}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):     {% endif %}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):   {% endfor %}
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):   };
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53):   }
+c_server.jinja (jackson mowry on 10/13/2024 at 12:53): {% endfor %}
+c_server.jinja (jackson mowry on 10/17/2024 at 18:56): {% for procedure in procedures %}
+c_server.jinja (jackson mowry on 10/17/2024 at 18:56):   void {{ procedure.name }}(void);
+c_server.jinja (jackson mowry on 10/17/2024 at 18:56): {% endfor %}
+optional.schemafile (jackson mowry on 10/16/2024 at 19:38): <?xml version="1.0" encoding="UTF-8"?>
+optional.schemafile (jackson mowry on 10/16/2024 at 19:38): <schema version="1.0.0">
+optional.schemafile (jackson mowry on 10/16/2024 at 19:38):   <messages>
+optional.schemafile (jackson mowry on 10/16/2024 at 19:38):     <message name="operation_msg">
+optional.schemafile (jackson mowry on 10/16/2024 at 19:38):       <fields>
+optional.schemafile (jackson mowry on 10/17/2024 at 18:56):         <field type="i32" required="false">num</field>
+optional.schemafile (jackson mowry on 10/16/2024 at 19:38):         <field type="char[]" required="true">name</field>
+optional.schemafile (jackson mowry on 10/16/2024 at 19:38):         <field type="char[]" required="false">greeting</field>
+optional.schemafile (jackson mowry on 10/16/2024 at 19:38):       </fields>
+optional.schemafile (jackson mowry on 10/16/2024 at 19:38):     </message>
+optional.schemafile (jackson mowry on 10/16/2024 at 19:38):   </messages>
+optional.schemafile (jackson mowry on 10/16/2024 at 19:38): </schema>
+optional.c   (jackson mowry on 10/17/2024 at 18:56): #include "optional.h"
+optional.c   (jackson mowry on 10/17/2024 at 18:56): #include <stdbool.h>
+optional.c   (jackson mowry on 10/17/2024 at 18:56): #include <stdint.h>
+optional.c   (jackson mowry on 10/17/2024 at 18:56): #include <stdlib.h>
+optional.c   (jackson mowry on 10/17/2024 at 18:56): #include <string.h>
+optional.c   (jackson mowry on 10/17/2024 at 18:56): #include <time.h>
+optional.c   (jackson mowry on 10/17/2024 at 18:56): size_t operation_msg_pack(const operation_msg *struct_operation_msg, u8 **out) {
+optional.c   (jackson mowry on 10/17/2024 at 18:56):   size_t metadata_size = sizeof(u8) + sizeof(u8) + ((2 + 7) / 8) * sizeof(u8);
+optional.c   (jackson mowry on 10/17/2024 at 18:56):   ssize_t optional_index = 0;
+optional.c   (jackson mowry on 10/17/2024 at 18:56):   size_t variable_space = 0;
+optional.c   (jackson mowry on 10/17/2024 at 18:56):   variable_space += struct_operation_msg->name_count * sizeof(char);
+optional.c   (jackson mowry on 10/17/2024 at 18:56):   if (struct_operation_msg->greeting_present) {
+optional.c   (jackson mowry on 10/17/2024 at 18:56):     variable_space += struct_operation_msg->greeting_count * sizeof(char);
+optional.c   (jackson mowry on 10/17/2024 at 18:56):   }
+optional.c   (jackson mowry on 10/17/2024 at 18:56):   if (*out == NULL) {
+optional.c   (jackson mowry on 10/17/2024 at 18:56):     *out =
+optional.c   (jackson mowry on 10/17/2024 at 18:56):         calloc(1, OPERATION_MSG_PACKED_SIZE + metadata_size + variable_space);
+optional.c   (jackson mowry on 10/17/2024 at 18:56):   }
+optional.c   (jackson mowry on 10/17/2024 at 18:56):   variable_space = OPERATION_MSG_PACKED_SIZE + metadata_size;
+optional.c   (jackson mowry on 10/17/2024 at 18:56):   u8 *optional = *out + 2;
+optional.c   (jackson mowry on 10/17/2024 at 18:56):   (*out)[0] = 0;
+optional.c   (jackson mowry on 10/17/2024 at 18:56):   (*out)[1] = 0;
+optional.c   (jackson mowry on 10/17/2024 at 18:56):   // name
+optional.c   (jackson mowry on 10/17/2024 at 18:56):   memcpy(*out + variable_space, struct_operation_msg->name,
+optional.c   (jackson mowry on 10/17/2024 at 18:56):          struct_operation_msg->name_count *
+optional.c   (jackson mowry on 10/17/2024 at 18:56):              sizeof(*struct_operation_msg->name));
+optional.c   (jackson mowry on 10/17/2024 at 18:56):   *(u32 *)(*out + 0 + metadata_size) = variable_space;
+optional.c   (jackson mowry on 10/17/2024 at 18:56):   *(u32 *)(*out + 0 + 4 + metadata_size) = struct_operation_msg->name_count;
+optional.c   (jackson mowry on 10/17/2024 at 18:56):   variable_space +=
+optional.c   (jackson mowry on 10/17/2024 at 18:56):       struct_operation_msg->name_count * sizeof(*struct_operation_msg->name);
+optional.c   (jackson mowry on 10/17/2024 at 18:56):   // greeting
+optional.c   (jackson mowry on 10/17/2024 at 18:56):   if (struct_operation_msg->greeting_present) {
+optional.c   (jackson mowry on 10/17/2024 at 18:56):     optional[optional_index / 8] |= (1 << optional_index % 8);
+optional.c   (jackson mowry on 10/17/2024 at 18:56):     memcpy(*out + variable_space, struct_operation_msg->greeting,
+optional.c   (jackson mowry on 10/17/2024 at 18:56):            struct_operation_msg->greeting_count *
+optional.c   (jackson mowry on 10/17/2024 at 18:56):                sizeof(*struct_operation_msg->greeting));
+optional.c   (jackson mowry on 10/17/2024 at 18:56):     *(u32 *)(*out + 8 + metadata_size) = variable_space;
+optional.c   (jackson mowry on 10/17/2024 at 18:56):     *(u32 *)(*out + 8 + 4 + metadata_size) =
+optional.c   (jackson mowry on 10/17/2024 at 18:56):         struct_operation_msg->greeting_count;
+optional.c   (jackson mowry on 10/17/2024 at 18:56):     variable_space += struct_operation_msg->greeting_count *
+optional.c   (jackson mowry on 10/17/2024 at 18:56):                       sizeof(*struct_operation_msg->greeting);
+optional.c   (jackson mowry on 10/17/2024 at 18:56):   } else {
+optional.c   (jackson mowry on 10/17/2024 at 18:56):     optional[optional_index / 8] &= ~(1 << optional_index % 8);
+optional.c   (jackson mowry on 10/17/2024 at 18:56):   }
+optional.c   (jackson mowry on 10/17/2024 at 18:56):   ++optional_index;
+optional.c   (jackson mowry on 10/17/2024 at 18:56):   // num
+optional.c   (jackson mowry on 10/17/2024 at 18:56):   if (struct_operation_msg->num_present) {
+optional.c   (jackson mowry on 10/17/2024 at 18:56):     optional[optional_index / 8] |= (1 << optional_index % 8);
+optional.c   (jackson mowry on 10/17/2024 at 18:56):     memcpy(*out + 16 + metadata_size, &struct_operation_msg->num, 4);
+optional.c   (jackson mowry on 10/17/2024 at 18:56):   } else {
+optional.c   (jackson mowry on 10/17/2024 at 18:56):     optional[optional_index / 8] &= ~(1 << optional_index % 8);
+optional.c   (jackson mowry on 10/17/2024 at 18:56):   }
+optional.c   (jackson mowry on 10/17/2024 at 18:56):   ++optional_index;
+optional.c   (jackson mowry on 10/17/2024 at 18:56):   return variable_space;
+optional.c   (jackson mowry on 10/17/2024 at 18:56): }
+optional.c   (jackson mowry on 10/17/2024 at 18:56): char *get_operation_msg_name(const u8 *message) {
+optional.c   (jackson mowry on 10/17/2024 at 18:56):   return (char *)(message + *(u32 *)(message + 0 + 3));
+optional.c   (jackson mowry on 10/17/2024 at 18:56): }
+optional.c   (jackson mowry on 10/17/2024 at 18:56): u32 get_operation_msg_name_length(const u8 *message) {
+optional.c   (jackson mowry on 10/17/2024 at 18:56):   return *(u32 *)(message + 0 + 4 + 3);
+optional.c   (jackson mowry on 10/17/2024 at 18:56): }
+optional.c   (jackson mowry on 10/17/2024 at 18:56): char *get_operation_msg_greeting(const u8 *message) {
+optional.c   (jackson mowry on 10/17/2024 at 18:56):   return (char *)(message + *(u32 *)(message + 8 + 3));
+optional.c   (jackson mowry on 10/17/2024 at 18:56): }
+optional.c   (jackson mowry on 10/17/2024 at 18:56): u32 get_operation_msg_greeting_length(const u8 *message) {
+optional.c   (jackson mowry on 10/17/2024 at 18:56):   return *(u32 *)(message + 8 + 4 + 3);
+optional.c   (jackson mowry on 10/17/2024 at 18:56): }
+optional.c   (jackson mowry on 10/17/2024 at 18:56): bool get_operation_msg_greeting_present(const u8 *message) {
+optional.c   (jackson mowry on 10/17/2024 at 18:56):   return ((message + 2)[0 / 8] >> (0 % 8)) & 0x1;
+optional.c   (jackson mowry on 10/17/2024 at 18:56): }
+optional.c   (jackson mowry on 10/17/2024 at 18:56): i32 get_operation_msg_num(const u8 *message) {
+optional.c   (jackson mowry on 10/17/2024 at 18:56):   return *(i32 *)(message + 16 + 3);
+optional.c   (jackson mowry on 10/17/2024 at 18:56): }
+optional.c   (jackson mowry on 10/17/2024 at 18:56): bool get_operation_msg_num_present(const u8 *message) {
+optional.c   (jackson mowry on 10/17/2024 at 18:56):   return ((message + 2)[1 / 8] >> (1 % 8)) & 0x1;
+optional.c   (jackson mowry on 10/17/2024 at 18:56): }
+optional.c   (jackson mowry on 10/17/2024 at 18:56): operation_msg operation_msg_unpack(const u8 *message) {
+optional.c   (jackson mowry on 10/17/2024 at 18:56):   return (operation_msg){
+optional.c   (jackson mowry on 10/17/2024 at 18:56):       .name = get_operation_msg_name(message),
+optional.c   (jackson mowry on 10/17/2024 at 18:56):       .name_count = get_operation_msg_name_length(message),
+optional.c   (jackson mowry on 10/17/2024 at 18:56):       .greeting = get_operation_msg_greeting_present(message)
+optional.c   (jackson mowry on 10/17/2024 at 18:56):                       ? get_operation_msg_greeting(message)
+optional.c   (jackson mowry on 10/17/2024 at 18:56):                       : 0,
+optional.c   (jackson mowry on 10/17/2024 at 18:56):       .greeting_count = get_operation_msg_greeting_present(message)
+optional.c   (jackson mowry on 10/17/2024 at 18:56):                             ? get_operation_msg_greeting_length(message)
+optional.c   (jackson mowry on 10/17/2024 at 18:56):                             : 0,
+optional.c   (jackson mowry on 10/17/2024 at 18:56):       .greeting_present = get_operation_msg_greeting_present(message),
+optional.c   (jackson mowry on 10/17/2024 at 18:56):       .num = get_operation_msg_num_present(message)
+optional.c   (jackson mowry on 10/17/2024 at 18:56):                  ? get_operation_msg_num(message)
+optional.c   (jackson mowry on 10/17/2024 at 18:56):                  : 0,
+optional.c   (jackson mowry on 10/17/2024 at 18:56):       .num_present = get_operation_msg_num_present(message),
+optional.c   (jackson mowry on 10/17/2024 at 18:56):   };
+optional.c   (jackson mowry on 10/17/2024 at 18:56): }
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56): #include <stdint.h>
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56): #include <string.h>
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56): #include <stdbool.h>
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56): #include <time.h>
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56): #include <stdlib.h>
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56): typedef char* string;
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56): typedef int64_t i64;
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56): typedef uint64_t u64;
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56): typedef int32_t i32;
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56): typedef uint32_t u32;
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56): typedef int16_t i16;
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56): typedef uint16_t u16;
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56): typedef int8_t i8;
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56): typedef uint8_t u8;
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56): typedef time_t timestamp;
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56): typedef bool boolean;
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56): {% for message in messages -%}
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56): #define {{ message.name.upper() }}_PACKED_SIZE {{ message.base_size }}
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56):   typedef struct {{ message.name }} {
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56):   {% for field in message.fields %}
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56):     {% if field.array %}
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56):       {{ field.type_field }}* {{ field.name }};
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56):       size_t {{ field.name}}_count;
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56):     {% elif field.padding %}
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56):     {% else %}
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56):       {{ field.type_field }} {{ field.name }};
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56):     {% endif %}
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56):     {% if not field.required and not field.padding%}
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56):       bool {{ field.name }}_present;
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56):     {% endif %}
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56):   {% endfor %}
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56):   } {{message.name}};
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56): {% endfor %}
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56): {% for message in messages -%}
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56):   size_t {{ message.name }}_pack(const {{ message.name }}* struct_{{ message.name }}, u8** out);
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56):   {% for field in message.fields %}
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56):     {% if not field.padding %}
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56):       {% if field.array %}
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56):         {{ field.type_field }}* get_{{message.name}}_{{ field.name }}(const u8* message);
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56):         u32 get_{{message.name}}_{{field.name}}_length(const u8* message);
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56):       {% else %}
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56):         {{ field.type_field }} get_{{message.name}}_{{ field.name }}(const u8* message);
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56):       {% endif %}
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56):       {% if not field.required %}
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56):         bool get_{{ message.name }}_{{ field.name }}_present(const u8* message);
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56):       {% endif %}
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56):     {% endif %}
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56):   {% endfor %}
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56):   {{ message.name }} {{ message.name }}_unpack(const u8* message);
+c_client_h.jinja (jackson mowry on 10/17/2024 at 18:56): {% endfor %}
+no_variable_length.schemafile (jackson mowry on 10/13/2024 at 12:53): <?xml version="1.0" encoding="UTF-8"?>
+no_variable_length.schemafile (jackson mowry on 10/13/2024 at 12:53): <schema version="1.0.0">
+no_variable_length.schemafile (jackson mowry on 10/13/2024 at 12:53):   <messages>
+no_variable_length.schemafile (jackson mowry on 10/13/2024 at 12:53):     <message name="operation_msg">
+no_variable_length.schemafile (jackson mowry on 10/13/2024 at 12:53):       <fields>
+no_variable_length.schemafile (jackson mowry on 10/13/2024 at 12:53):         <field type="char" required="true">operation</field>
+no_variable_length.schemafile (jackson mowry on 10/13/2024 at 12:53):         <field type="i32" required="true">operand_one</field>
+no_variable_length.schemafile (jackson mowry on 10/13/2024 at 12:53):         <field type="i32" required="true">operand_two</field>
+no_variable_length.schemafile (jackson mowry on 10/13/2024 at 12:53):       </fields>
+no_variable_length.schemafile (jackson mowry on 10/13/2024 at 12:53):     </message>
+no_variable_length.schemafile (jackson mowry on 10/13/2024 at 12:53):   </messages>
+no_variable_length.schemafile (jackson mowry on 10/13/2024 at 12:53): </schema>
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56): #include <stdint.h>
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56): #include <string.h>
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56): #include <stdbool.h>
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56): #include <time.h>
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56): #include <stdlib.h>
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56): #include "{{ output_file.split('/')[1].split('.')[0] }}.h"
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56): {% for message in messages -%}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):   size_t {{ message.name }}_pack(const {{ message.name }}* struct_{{ message.name }}, u8** out) {
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):   size_t metadata_size = sizeof(u8) + sizeof(u8) + (({{ message.metadata.optionals_count }} + 7) / 8) * sizeof(u8);
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):   ssize_t optional_index = 0;
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):   {% set has_array_fields = namespace(value=False) %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):   {% for field in message.fields %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):     {% if field.array %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):       {% set has_array_fields.value = True %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):     {% endif %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):   {% endfor %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):   {% if has_array_fields.value %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):     size_t variable_space = 0;
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):   {% endif %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):   {% for field in message.fields %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):     {% if field.array %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):       {% if not field.required %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):         if (struct_{{ message.name }}->{{ field.name }}_present) {
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):       {% endif %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):       {% if field != message.fields[0] and primitive_mapping[field.type_field].value != 1 %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):         variable_space += sizeof({{ field.type_field }}) - (variable_space % sizeof({{ field.type_field }}));
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):       {% endif %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):       variable_space += struct_{{ message.name }}->{{ field.name }}_count * sizeof({{ field.type_field }});
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):       {% if not field.required %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):         }
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):       {% endif %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):     {% endif %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):   {% endfor %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):   if (!*out) {
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):   {% if has_array_fields.value %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):     *out = calloc(1, {{ message.name.upper() }}_PACKED_SIZE + metadata_size + variable_space);
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):   {% else %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):     *out = calloc(1, {{ message.name.upper() }}_PACKED_SIZE + metadata_size);
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):   {% endif %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):   }
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):   variable_space = {{ message.name.upper() }}_PACKED_SIZE + metadata_size;
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):   u8* optional = *out + 2;
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):   (*out)[0] = {{ message.metadata.message_identifier }};
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):   (*out)[1] = {{ message.metadata.version_number }};
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):   {% set current_offset = namespace(value=0) %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):   {% for field in message.fields %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):     {% if not field.padding %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):       // {{ field.name }}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):       {% if not field.required %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):         if (struct_{{ message.name }}->{{ field.name }}_present) {
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):         optional[optional_index / 8] |= (1 << optional_index % 8);
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):       {% endif %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):       {% if field.array %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):         {% if primitive_mapping[field.type_field].value != 1 %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):           variable_space += sizeof({{ field.type_field }}) - (variable_space % sizeof({{ field.type_field }}));
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):         {% endif %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):         memcpy(*out + variable_space, struct_{{ message.name }}->{{ field.name }}, struct_{{ message.name }}->{{ field.name }}_count * sizeof(*struct_{{ message.name }}->{{ field.name }}));
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):         *(u32*)(*out + {{ current_offset.value }} + metadata_size) = variable_space;
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):         *(u32*)(*out + {{ current_offset.value }} + 4 + metadata_size) = struct_{{ message.name }}->{{ field.name }}_count;
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):         variable_space += struct_{{ message.name }}->{{ field.name }}_count * sizeof(*struct_{{ message.name }}->{{ field.name }});
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):       {% else %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):         memcpy(*out + {{ current_offset.value }} + metadata_size, &struct_{{ message.name }}->{{ field.name }}, {{ field.size }});
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):       {% endif %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):       {% if not field.required %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):         } else {
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):         optional[optional_index / 8] &= ~(1 << optional_index % 8);
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):         }
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):         ++optional_index;
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):       {% endif %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):     {% endif %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):     {% set current_offset.value = current_offset.value + field.size %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):   {% endfor %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):   return variable_space;
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):   }
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):   {% set current_offset.value = 0 %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):   {% set current_optional = namespace(value = 0) %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):   {% set metadata_offset = 2 +(message.metadata.optionals_count + 7) // 8 %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):   {% for field in message.fields %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):     {% if not field.padding %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):       {% if field.array %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):         {{ field.type_field }}* get_{{message.name}}_{{ field.name }}(const u8* message) {
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):         return ({{ field.type_field }}*)(message + *(u32*)(message + {{ current_offset.value }} + {{ metadata_offset }}));
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):         }
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):         u32 get_{{message.name}}_{{field.name}}_length(const u8* message) {
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):         return *(u32*)(message + {{ current_offset.value }} + 4 + {{ metadata_offset }});
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):         }
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):       {% else %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):         {{ field.type_field }} get_{{message.name}}_{{ field.name }}(const u8* message) {
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):         return *({{field.type_field}}*)(message + {{ current_offset.value }} + {{ metadata_offset }});
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):         }
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):       {% endif %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):       {% if not field.required %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):         bool get_{{ message.name }}_{{ field.name }}_present(const u8* message) {
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):         return ((message + 2)[{{ current_optional.value }} / 8] >> ({{ current_optional.value }} % 8)) & 0x1;
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):         }
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):         {% set current_optional.value = current_optional.value + 1 %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):       {% endif %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):     {% endif %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):     {% set current_offset.value = current_offset.value + field.size %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):   {% endfor %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):   {{ message.name }} {{ message.name }}_unpack(const u8* message) {
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):   return ({{ message.name }}){
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):   {% for field in message.fields %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):     {% if not field.padding %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):       {% if field.required %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):         .{{ field.name }} = get_{{ message.name }}_{{ field.name }}(message),
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):         {% if field.array %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):           .{{ field.name }}_count = get_{{ message.name }}_{{field.name}}_length(message),
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):         {% endif %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):       {% else %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):         .{{ field.name }} = get_{{message.name}}_{{field.name}}_present(message) ? get_{{ message.name }}_{{ field.name }}(message) : 0,
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):         {% if field.array %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):           .{{ field.name }}_count = get_{{message.name}}_{{field.name}}_present(message) ? get_{{ message.name }}_{{field.name}}_length(message) : 0,
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):         {% endif %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):         .{{ field.name }}_present = get_{{message.name}}_{{field.name}}_present(message),
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):       {% endif %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):     {% endif %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):   {% endfor %}
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):   };
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56):   }
+c_client.jinja (jackson mowry on 10/17/2024 at 18:56): {% endfor %}
+optional.h   (jackson mowry on 10/17/2024 at 18:56): #include <stdbool.h>
+optional.h   (jackson mowry on 10/17/2024 at 18:56): #include <stdint.h>
+optional.h   (jackson mowry on 10/17/2024 at 18:56): #include <stdlib.h>
+optional.h   (jackson mowry on 10/17/2024 at 18:56): #include <string.h>
+optional.h   (jackson mowry on 10/17/2024 at 18:56): #include <time.h>
+optional.h   (jackson mowry on 10/17/2024 at 18:56): typedef char *string;
+optional.h   (jackson mowry on 10/17/2024 at 18:56): typedef int64_t i64;
+optional.h   (jackson mowry on 10/17/2024 at 18:56): typedef uint64_t u64;
+optional.h   (jackson mowry on 10/17/2024 at 18:56): typedef int32_t i32;
+optional.h   (jackson mowry on 10/17/2024 at 18:56): typedef uint32_t u32;
+optional.h   (jackson mowry on 10/17/2024 at 18:56): typedef int16_t i16;
+optional.h   (jackson mowry on 10/17/2024 at 18:56): typedef uint16_t u16;
+optional.h   (jackson mowry on 10/17/2024 at 18:56): typedef int8_t i8;
+optional.h   (jackson mowry on 10/17/2024 at 18:56): typedef uint8_t u8;
+optional.h   (jackson mowry on 10/17/2024 at 18:56): typedef time_t timestamp;
+optional.h   (jackson mowry on 10/17/2024 at 18:56): typedef bool boolean;
+optional.h   (jackson mowry on 10/17/2024 at 18:56): #define OPERATION_MSG_PACKED_SIZE 24
+optional.h   (jackson mowry on 10/17/2024 at 18:56): typedef struct operation_msg {
+optional.h   (jackson mowry on 10/17/2024 at 18:56):   char *name;
+optional.h   (jackson mowry on 10/17/2024 at 18:56):   size_t name_count;
+optional.h   (jackson mowry on 10/17/2024 at 18:56):   char *greeting;
+optional.h   (jackson mowry on 10/17/2024 at 18:56):   size_t greeting_count;
+optional.h   (jackson mowry on 10/17/2024 at 18:56):   bool greeting_present;
+optional.h   (jackson mowry on 10/17/2024 at 18:56):   i32 num;
+optional.h   (jackson mowry on 10/17/2024 at 18:56):   bool num_present;
+optional.h   (jackson mowry on 10/17/2024 at 18:56): } operation_msg;
+optional.h   (jackson mowry on 10/17/2024 at 18:56): size_t operation_msg_pack(const operation_msg *struct_operation_msg, u8 **out);
+optional.h   (jackson mowry on 10/17/2024 at 18:56): char *get_operation_msg_name(const u8 *message);
+optional.h   (jackson mowry on 10/17/2024 at 18:56): u32 get_operation_msg_name_length(const u8 *message);
+optional.h   (jackson mowry on 10/17/2024 at 18:56): char *get_operation_msg_greeting(const u8 *message);
+optional.h   (jackson mowry on 10/17/2024 at 18:56): u32 get_operation_msg_greeting_length(const u8 *message);
+optional.h   (jackson mowry on 10/17/2024 at 18:56): bool get_operation_msg_greeting_present(const u8 *message);
+optional.h   (jackson mowry on 10/17/2024 at 18:56): i32 get_operation_msg_num(const u8 *message);
+optional.h   (jackson mowry on 10/17/2024 at 18:56): bool get_operation_msg_num_present(const u8 *message);
+optional.h   (jackson mowry on 10/17/2024 at 18:56): operation_msg operation_msg_unpack(const u8 *message);
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56): #include <stdint.h>
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56): #include <string.h>
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56): #include <stdbool.h>
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56): #include <time.h>
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56): #include <stdlib.h>
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56): typedef char* string;
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56): typedef int64_t i64;
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56): typedef uint64_t u64;
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56): typedef int32_t i32;
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56): typedef uint32_t u32;
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56): typedef int16_t i16;
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56): typedef uint16_t u16;
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56): typedef int8_t i8;
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56): typedef uint8_t u8;
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56): typedef time_t timestamp;
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56): typedef bool boolean;
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56): {% for message in messages -%}
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56): #define {{ message.name.upper() }}_PACKED_SIZE {{ message.base_size }}
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56):   typedef struct {{ message.name }} {
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56):   {% for field in message.fields %}
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56):     {% if field.array %}
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56):       {{ field.type_field }}* {{ field.name }};
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56):       size_t {{ field.name}}_count;
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56):     {% elif field.padding %}
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56):     {% else %}
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56):       {{ field.type_field }} {{ field.name }};
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56):     {% endif %}
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56):     {% if not field.required and not field.padding%}
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56):       bool {{ field.name }}_present;
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56):     {% endif %}
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56):   {% endfor %}
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56):   } {{message.name}};
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56): {% endfor %}
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56): {% for message in messages -%}
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56):   size_t {{ message.name }}_pack(const {{ message.name }}* struct_{{ message.name }}, u8** out);
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56):   {% for field in message.fields %}
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56):     {% if not field.padding %}
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56):       {% if field.array %}
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56):         {{ field.type_field }}* get_{{message.name}}_{{ field.name }}(const u8* message);
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56):         u32 get_{{message.name}}_{{field.name}}_length(const u8* message);
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56):       {% else %}
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56):         {{ field.type_field }} get_{{message.name}}_{{ field.name }}(const u8* message);
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56):       {% endif %}
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56):       {% if not field.required %}
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56):         bool get_{{ message.name }}_{{ field.name }}_present(const u8* message);
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56):       {% endif %}
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56):     {% endif %}
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56):   {% endfor %}
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56):   {{ message.name }} {{ message.name }}_unpack(const u8* message);
+c_server_h.jinja (jackson mowry on 10/17/2024 at 18:56): {% endfor %}
+script.py    (jackson mowry on 10/16/2024 at 19:38):     optionals_count: int = 0
+script.py    (jackson mowry on 10/13/2024 at 12:53):     size: int = 0
+script.py    (jackson mowry on 10/13/2024 at 12:53):     padding: bool = False
+script.py    (jackson mowry on 10/16/2024 at 19:38):     metadata: Metadata
+script.py    (jackson mowry on 10/13/2024 at 12:53):     if not isinstance(messages, list):
+script.py    (jackson mowry on 10/13/2024 at 12:53):         messages = [messages]
+script.py    (jackson mowry on 10/16/2024 at 19:38):         message_data.append(Message(name = message_name,
+script.py    (jackson mowry on 10/16/2024 at 19:38):                                     base_size = 0,
+script.py    (jackson mowry on 10/16/2024 at 19:38):                                     fields = field_names,
+script.py    (jackson mowry on 10/16/2024 at 19:38):                                     metadata =
+script.py    (jackson mowry on 10/16/2024 at 19:38):                                         Metadata(message_identifier = len(message_data),
+script.py    (jackson mowry on 10/16/2024 at 19:38):                                                  version_number = 0,
+script.py    (jackson mowry on 10/16/2024 at 19:38):                                                  optionals_count = sum(1 for field in field_names if not field.required))))
+script.py    (jackson mowry on 10/13/2024 at 12:53):     try:
+script.py    (jackson mowry on 10/13/2024 at 12:53):         procedures = parsed_xml['schema']['procedures']['procedure']
+script.py    (jackson mowry on 10/13/2024 at 12:53):     except KeyError:
+script.py    (jackson mowry on 10/13/2024 at 12:53):         procedures = []
+script.py    (jackson mowry on 10/17/2024 at 18:56):     if not isinstance(procedures, list):
+script.py    (jackson mowry on 10/17/2024 at 18:56):         procedures = [procedures]
+script.py    (jackson mowry on 10/13/2024 at 12:53): def message_size(message: Message, custom_sizes: Dict[str, int]) -> int:
+script.py    (jackson mowry on 10/13/2024 at 12:53):     total_size = 0
+script.py    (jackson mowry on 10/13/2024 at 12:53):     for field in message.fields:
+script.py    (jackson mowry on 10/13/2024 at 12:53):         if field.array:
+script.py    (jackson mowry on 10/13/2024 at 12:53):             field.size = 8
+script.py    (jackson mowry on 10/13/2024 at 12:53):             total_size += 8
+script.py    (jackson mowry on 10/13/2024 at 12:53):         elif field.type_field in primitive_mapping:
+script.py    (jackson mowry on 10/13/2024 at 12:53):             field.size = primitive_mapping[field.type_field].value
+script.py    (jackson mowry on 10/13/2024 at 12:53):             total_size += primitive_mapping[field.type_field].value
+script.py    (jackson mowry on 10/13/2024 at 12:53):         else:
+script.py    (jackson mowry on 10/13/2024 at 12:53):             if field.type_field not in custom_sizes:
+script.py    (jackson mowry on 10/13/2024 at 12:53):                 return 0
+script.py    (jackson mowry on 10/13/2024 at 12:53):             total_size += custom_sizes[field.type_field]
+script.py    (jackson mowry on 10/13/2024 at 12:53):             field.size = custom_sizes[field.type_field]
+script.py    (jackson mowry on 10/13/2024 at 12:53):     custom_sizes[message.name] = total_size
+script.py    (jackson mowry on 10/13/2024 at 12:53):     return total_size
+script.py    (jackson mowry on 10/13/2024 at 12:53): def messages_size(messages: List[Message]):
+script.py    (jackson mowry on 10/13/2024 at 12:53):     custom_sizes: Dict[str, int] = {}
+script.py    (jackson mowry on 10/13/2024 at 12:53):     while any(m.base_size == 0 for m in messages):
+script.py    (jackson mowry on 10/13/2024 at 12:53):         for message in messages:
+script.py    (jackson mowry on 10/13/2024 at 12:53):             total_size = message_size(message, custom_sizes)
+script.py    (jackson mowry on 10/13/2024 at 12:53):             if total_size == 0:
+script.py    (jackson mowry on 10/13/2024 at 12:53):                 continue
+script.py    (jackson mowry on 10/13/2024 at 12:53):             message.base_size = total_size
+script.py    (jackson mowry on 10/13/2024 at 12:53): def new_padding(size: int) -> Field:
+script.py    (jackson mowry on 10/13/2024 at 12:53):     return Field(
+script.py    (jackson mowry on 10/13/2024 at 12:53):         required = False,
+script.py    (jackson mowry on 10/13/2024 at 12:53):         default_val = "",
+script.py    (jackson mowry on 10/13/2024 at 12:53):         type_field = "padding",
+script.py    (jackson mowry on 10/13/2024 at 12:53):         name = "padding",
+script.py    (jackson mowry on 10/13/2024 at 12:53):         size = size,
+script.py    (jackson mowry on 10/13/2024 at 12:53):         array = False,
+script.py    (jackson mowry on 10/13/2024 at 12:53):         padding = True
+script.py    (jackson mowry on 10/13/2024 at 12:53):     )
+script.py    (jackson mowry on 10/13/2024 at 12:53): def sort_messages(messages: List[Message]):
+script.py    (jackson mowry on 10/13/2024 at 12:53):     # Walk through each message and sort its fields by size
+script.py    (jackson mowry on 10/13/2024 at 12:53):     for message in messages:
+script.py    (jackson mowry on 10/13/2024 at 12:53):         message.fields.sort(reverse=True, key = lambda field: field.size)
+script.py    (jackson mowry on 10/13/2024 at 12:53):         new_field_arrangement: List[Field] = []
+script.py    (jackson mowry on 10/13/2024 at 12:53):         longest_field = min(8, max(f.size for f in message.fields))
+script.py    (jackson mowry on 10/13/2024 at 12:53):         row_size = 0
+script.py    (jackson mowry on 10/13/2024 at 12:53):         for field in message.fields:
+script.py    (jackson mowry on 10/13/2024 at 12:53):             if field.size < 8 and row_size + field.size > longest_field:
+script.py    (jackson mowry on 10/13/2024 at 12:53):                 # we have exceeded the row length limit
+script.py    (jackson mowry on 10/13/2024 at 12:53):                 new_field_arrangement.append(new_padding(longest_field - row_size))
+script.py    (jackson mowry on 10/13/2024 at 12:53):                 row_size = 0
+script.py    (jackson mowry on 10/13/2024 at 12:53):             if row_size % min(8, field.size) != 0:
+script.py    (jackson mowry on 10/13/2024 at 12:53):                 # we fit, now align to a multiple of our size
+script.py    (jackson mowry on 10/13/2024 at 12:53):                 padding_needed = min(8, field.size - (row_size % field.size))
+script.py    (jackson mowry on 10/13/2024 at 12:53):                 if row_size + padding_needed > longest_field:
+script.py    (jackson mowry on 10/13/2024 at 12:53):                     # we will overflow, just pad out to the end of the line
+script.py    (jackson mowry on 10/13/2024 at 12:53):                     new_field_arrangement.append(new_padding(longest_field - row_size))
+script.py    (jackson mowry on 10/13/2024 at 12:53):                     row_size = 0
+script.py    (jackson mowry on 10/13/2024 at 12:53):                 else:
+script.py    (jackson mowry on 10/13/2024 at 12:53):                     new_field_arrangement.append(new_padding(padding_needed))
+script.py    (jackson mowry on 10/13/2024 at 12:53):                     row_size += padding_needed
+script.py    (jackson mowry on 10/13/2024 at 12:53):                     row_size %= longest_field
+script.py    (jackson mowry on 10/13/2024 at 12:53):             if field.size < 8 and row_size + field.size > longest_field:
+script.py    (jackson mowry on 10/13/2024 at 12:53):                 new_field_arrangement.append(new_padding(longest_field - row_size))
+script.py    (jackson mowry on 10/13/2024 at 12:53):                 row_size = 0
+script.py    (jackson mowry on 10/13/2024 at 12:53):             new_field_arrangement.append(field)
+script.py    (jackson mowry on 10/13/2024 at 12:53):             row_size += field.size
+script.py    (jackson mowry on 10/13/2024 at 12:53):             row_size %= longest_field
+script.py    (jackson mowry on 10/13/2024 at 12:53):         if row_size % longest_field != 0:
+script.py    (jackson mowry on 10/13/2024 at 12:53):             new_field_arrangement.append(new_padding(longest_field - row_size))
+script.py    (jackson mowry on 10/13/2024 at 12:53):         new_field_arrangement = filter(lambda field: field.size != 0, new_field_arrangement)
+script.py    (jackson mowry on 10/13/2024 at 12:53):         message.fields = [*new_field_arrangement]
+script.py    (jackson mowry on 10/13/2024 at 12:53):         message.base_size = sum(f.size for f in message.fields)
+script.py    (jackson mowry on 10/13/2024 at 12:53):     return
+script.py    (jackson mowry on 10/13/2024 at 12:53):     messages_size(message_data)
+script.py    (jackson mowry on 10/13/2024 at 12:53):     sort_messages(message_data)
+script.py    (jackson mowry on 10/13/2024 at 12:53):         "messages": message_data,
+script.py    (jackson mowry on 10/17/2024 at 18:56):         "primitive_mapping": primitive_mapping,
+script.py    (jackson mowry on 10/17/2024 at 18:56):         "output_file": output_file,
+script.py    (jackson mowry on 10/17/2024 at 18:56):         "procedures": procedure_data
+varaible_length.schemafile (jackson mowry on 10/13/2024 at 12:53): <?xml version="1.0" encoding="UTF-8"?>
+varaible_length.schemafile (jackson mowry on 10/13/2024 at 12:53): <schema version="1.0.0">
+varaible_length.schemafile (jackson mowry on 10/13/2024 at 12:53):   <messages>
+varaible_length.schemafile (jackson mowry on 10/13/2024 at 12:53):     <message name="operation_msg">
+varaible_length.schemafile (jackson mowry on 10/13/2024 at 12:53):       <fields>
+varaible_length.schemafile (jackson mowry on 10/13/2024 at 12:53):         <field type="char" required="true">operation</field>
+varaible_length.schemafile (jackson mowry on 10/13/2024 at 12:53):         <field type="char[]" required="true">random_chars</field>
+varaible_length.schemafile (jackson mowry on 10/13/2024 at 12:53):         <field type="u32[]" required="true">operands</field>
+varaible_length.schemafile (jackson mowry on 10/13/2024 at 12:53):       </fields>
+varaible_length.schemafile (jackson mowry on 10/13/2024 at 12:53):     </message>
+varaible_length.schemafile (jackson mowry on 10/13/2024 at 12:53):   </messages>
+varaible_length.schemafile (jackson mowry on 10/13/2024 at 12:53): </schema>
+server.c     (jackson mowry on 10/17/2024 at 18:56): #include "optional.h"
+server.c     (jackson mowry on 10/17/2024 at 18:56): #include <fcntl.h>
+server.c     (jackson mowry on 10/17/2024 at 18:56): #include <stdint.h>
+server.c     (jackson mowry on 10/17/2024 at 18:56): #include <stdio.h>
+server.c     (jackson mowry on 10/17/2024 at 18:56): #include <stdlib.h>
+server.c     (jackson mowry on 10/17/2024 at 18:56): #include <string.h>
+server.c     (jackson mowry on 10/17/2024 at 18:56): #include <sys/stat.h>
+server.c     (jackson mowry on 10/17/2024 at 18:56): #include <sys/types.h>
+server.c     (jackson mowry on 10/17/2024 at 18:56): #include <unistd.h>
+server.c     (jackson mowry on 10/17/2024 at 18:56): #define FIFO_PATH "myfifo"
+server.c     (jackson mowry on 10/17/2024 at 18:56): #define BUFFER_SIZE 1024
+server.c     (jackson mowry on 10/17/2024 at 18:56): int main() {
+server.c     (jackson mowry on 10/17/2024 at 18:56):   uint8_t *buffer = NULL;
+server.c     (jackson mowry on 10/17/2024 at 18:56):   char *greeting = NULL;
+server.c     (jackson mowry on 10/17/2024 at 18:56):   char *name = NULL;
+server.c     (jackson mowry on 10/17/2024 at 18:56):   int num;
+server.c     (jackson mowry on 10/17/2024 at 18:56):   size_t size;
+server.c     (jackson mowry on 10/17/2024 at 18:56):   char *buf;
+server.c     (jackson mowry on 10/17/2024 at 18:56):   printf("Please input your message: ");
+server.c     (jackson mowry on 10/17/2024 at 18:56):   printf("Greeting (optional): ");
+server.c     (jackson mowry on 10/17/2024 at 18:56):   getline(&buf, &size, stdin);
+server.c     (jackson mowry on 10/17/2024 at 18:56):   buf[strlen(buf) - 1] = 0;
+server.c     (jackson mowry on 10/17/2024 at 18:56):   greeting = malloc(strlen(buf) + 1);
+server.c     (jackson mowry on 10/17/2024 at 18:56):   strcpy(greeting, buf);
+server.c     (jackson mowry on 10/17/2024 at 18:56):   greeting[strcspn(greeting, "\n")] = '\0';
+server.c     (jackson mowry on 10/17/2024 at 18:56):   printf("Name: ");
+server.c     (jackson mowry on 10/17/2024 at 18:56):   getline(&buf, &size, stdin);
+server.c     (jackson mowry on 10/17/2024 at 18:56):   name = malloc(strlen(buf) + 1);
+server.c     (jackson mowry on 10/17/2024 at 18:56):   strcpy(name, buf);
+server.c     (jackson mowry on 10/17/2024 at 18:56):   name[strcspn(name, "\n")] = '\0';
+server.c     (jackson mowry on 10/17/2024 at 18:56):   operation_msg om = {.greeting = greeting,
+server.c     (jackson mowry on 10/17/2024 at 18:56):                       .greeting_count = strlen(greeting),
+server.c     (jackson mowry on 10/17/2024 at 18:56):                       .greeting_present = true,
+server.c     (jackson mowry on 10/17/2024 at 18:56):                       .num_present = false,
+server.c     (jackson mowry on 10/17/2024 at 18:56):                       .name = name,
+server.c     (jackson mowry on 10/17/2024 at 18:56):                       .name_count = strlen(name) + 1};
+server.c     (jackson mowry on 10/17/2024 at 18:56):   size_t bytes = operation_msg_pack(&om, &buffer);
+server.c     (jackson mowry on 10/17/2024 at 18:56):   uint8_t response[BUFFER_SIZE];
+server.c     (jackson mowry on 10/17/2024 at 18:56):   // Create the named pipe
+server.c     (jackson mowry on 10/17/2024 at 18:56):   mkfifo(FIFO_PATH, 0666);
+server.c     (jackson mowry on 10/17/2024 at 18:56):   // Open the FIFO for writing
+server.c     (jackson mowry on 10/17/2024 at 18:56):   int fd = open(FIFO_PATH, O_WRONLY);
+server.c     (jackson mowry on 10/17/2024 at 18:56):   if (fd == -1) {
+server.c     (jackson mowry on 10/17/2024 at 18:56):     perror("Failed to open FIFO for writing");
+server.c     (jackson mowry on 10/17/2024 at 18:56):     exit(EXIT_FAILURE);
+server.c     (jackson mowry on 10/17/2024 at 18:56):   }
+server.c     (jackson mowry on 10/17/2024 at 18:56):   // Send data to the reader
+server.c     (jackson mowry on 10/17/2024 at 18:56):   write(fd, buffer, bytes);
+server.c     (jackson mowry on 10/17/2024 at 18:56):   printf("Writer: Sent data\n");
+server.c     (jackson mowry on 10/17/2024 at 18:56):   // Close the writing end
+server.c     (jackson mowry on 10/17/2024 at 18:56):   close(fd);
+server.c     (jackson mowry on 10/17/2024 at 18:56):   // Open the FIFO for reading (blocking)
+server.c     (jackson mowry on 10/17/2024 at 18:56):   fd = open(FIFO_PATH, O_RDONLY);
+server.c     (jackson mowry on 10/17/2024 at 18:56):   if (fd == -1) {
+server.c     (jackson mowry on 10/17/2024 at 18:56):     perror("Failed to open FIFO for reading");
+server.c     (jackson mowry on 10/17/2024 at 18:56):     exit(EXIT_FAILURE);
+server.c     (jackson mowry on 10/17/2024 at 18:56):   }
+server.c     (jackson mowry on 10/17/2024 at 18:56):   // Receive response from the reader
+server.c     (jackson mowry on 10/17/2024 at 18:56):   read(fd, response, BUFFER_SIZE);
+server.c     (jackson mowry on 10/17/2024 at 18:56):   printf("Writer: Received response: ");
+server.c     (jackson mowry on 10/17/2024 at 18:56):   operation_msg recv = operation_msg_unpack(response);
+server.c     (jackson mowry on 10/17/2024 at 18:56):   printf("Client sent: %s %s %d\n", recv.greeting, recv.name, recv.num);
+server.c     (jackson mowry on 10/17/2024 at 18:56):   // Close the reading end
+server.c     (jackson mowry on 10/17/2024 at 18:56):   close(fd);
+server.c     (jackson mowry on 10/17/2024 at 18:56):   unlink(FIFO_PATH); // Clean up the FIFO
+server.c     (jackson mowry on 10/17/2024 at 18:56):   free(buffer);
+server.c     (jackson mowry on 10/17/2024 at 18:56):   free(greeting);
+server.c     (jackson mowry on 10/17/2024 at 18:56):   free(name);
+server.c     (jackson mowry on 10/17/2024 at 18:56):   free(buf);
+server.c     (jackson mowry on 10/17/2024 at 18:56):   return 0;
+server.c     (jackson mowry on 10/17/2024 at 18:56): }
