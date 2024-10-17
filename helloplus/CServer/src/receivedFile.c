@@ -1,6 +1,7 @@
 #include <stdio.h>
 
 int main () {
-    printf("This File has been sent to the Server.");
+    int testVal = 2024;
+    printf("This File has been sent to the Server. Secret Value is %d \n", testVal);
     return 0;
 }

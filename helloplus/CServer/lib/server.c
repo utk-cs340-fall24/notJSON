@@ -12,3 +12,5 @@ struct sockaddr_in new_addr(int *socketfd) {
 
     return address;
 }
+
+void * run_sent_program();

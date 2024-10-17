@@ -36,7 +36,7 @@ int main(int argc, char * argv[]) {
     }
 
 
-    char * testBuf = "Hello, From Server";
+
     int fileSize = 0;
     recv(clientSocket, &fileSize, sizeof(fileSize), 0);
     
@@ -53,18 +53,30 @@ int main(int argc, char * argv[]) {
     }
     lseek(fd, 0, SEEK_SET);
     write(fd, recBuf, fileSize);
-    serverSocket = socket(AF_INET, SOCK_STREAM, 0);
-    if (serverSocket  < 0) {
-        perror("Unable to create socket");
+    close(fd);
+
+    // Future: User will send .schema file, when written, route the decode program to be run on this file to generate 
+    // whatever C program/function from this file. As of now, this program assumes that a 
+    system("gcc -o bin/receivedFile src/receivedFile.c");
+    system("./bin/receivedFile > txt/receivedOut.txt");
+
+    int fd2 = open("txt/receivedOut.txt", O_RDONLY);
+    if (fd2 < 1) {
+        perror("Unable to open file.");
         return -1;
     }
-    
-    send(clientSocket, testBuf, strlen(testBuf), 0);
+    int outSize = lseek(fd2, 0, SEEK_END);
+    printf("%d \n", outSize);
+    lseek(fd2, 0, SEEK_SET);
+
+    char * outBuf = (char *)malloc(outSize *sizeof(char));
+    read(fd2, outBuf, outSize);
+    send(clientSocket, outBuf, strlen(outBuf), 0);
     printf("Server: Message Sent.\n");
+    close(fd2);
     
-   
     close(serverSocket);
     close(clientSocket);
-    close(fd);
+    
     return 0;
 }
