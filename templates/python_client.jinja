@@ -34,6 +34,53 @@ class {{ message.name }} :
 
 {% endfor %}
 
+{% for message in messages %}
+
+def {{ message.name }}_unpack(binary_string) -> {{ message.name }}:
+  format_string_mapping = {
+    'string' : 'q',
+    'char' : 'c',
+    'i64' : 'q',
+    'ui64' : 'Q',
+    'i32' : 'i',
+    'ui32' : 'I',
+    'i16' : 'h',
+    'ui6' : 'H',
+    'i8' : 'b',
+    'u8' : 'B'
+  }
+
+  format_string = '<'
+  {% for field in message.fields %}
+  {% if field.array %}
+  {{field.name}} : list[{{ field.type_field}}] 
+  {% else %}
+  {% if field.name != "padding" %}
+  format_string += format_string_mapping['{{ field.type_field}}']
+  {% endif %}
+  {% endif %}
+  {% endfor %}
+
+  (
+    {% for field in message.fields %}
+    {% if field.name != "padding" %}
+    {{field.name}},
+    {% endif %}
+    {% endfor %}
+  ) = struct.unpack(format_string, binary_string) 
+
+  object = {{ message.name }} (
+    {% for field in message.fields %}
+    {% if field.name != "padding" %}
+    {{field.name}},
+    {% endif %}
+    {% endfor %}
+  ) 
+
+  return object
+
+{% endfor %}
+
 def main():
     print("hello")
 
@@ -47,9 +94,10 @@ def main():
     # data for the reaction dataclass
     #print(struct.pack('<Ql', 6, 1023))
 
-    op = operation_msg(['a'], [1], 'b')
+    binary_string = struct.pack('<iic', 1, 1023, bytes('a', 'utf-8'))
+    msg = operation_msg_unpack(binary_string)
+    print(msg.operand_two)
 
-    print(op.operation)
 
 if __name__ == '__main__':
     main()

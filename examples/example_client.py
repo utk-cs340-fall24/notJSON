@@ -30,8 +30,15 @@ from typing import TypeAlias
 string : TypeAlias = str
 char : TypeAlias = str
 i64 : TypeAlias = ctypes.c_int64
+u64 : TypeAlias = ctypes.c_uint64
+i32 : TypeAlias = ctypes.c_int32
 u32 : TypeAlias = ctypes.c_uint32
+i16 : TypeAlias = ctypes.c_int16
+u16 : TypeAlias = ctypes.c_uint16
+i8 : TypeAlias = ctypes.c_int8
+u8 : TypeAlias = ctypes.c_uint8
 size_t : TypeAlias = ctypes.c_size_t
+
 
 typedict = {
     'i32' : ctypes.c_int32,
@@ -40,28 +47,55 @@ typedict = {
 
 
 #@dataclass
-#class reaction:
-    ##emoji : ctypes.c_uint64
-    #emoji : typedict['string']
-    #count : typedict['i32']
-
-#typedef struct operation_msg {
-  #random_chars : list[char]
-  #size_t random_chars_count;
-  #u32 * operands;
-  #size_t operands_count;
-  #char operation;
-#}
+#class operation_msg:
+    #random_chars : list[char]
+    ##random_chars_count : size_t
+    #operands : list[u32]
+    ##operands_count : size_t
+    #operation : char
 
 @dataclass
 class operation_msg:
-    random_chars : list[char]
-    #random_chars_count : size_t
-    operands : list[u32]
-    #operands_count : size_t
+    operand_one : i32
+    operand_two : i32
     operation : char
 
+def operation_msg_unpack (binary_string) -> operation_msg:
+    format_string_mapping = {
+        'string' : 'q',
+        'char' : 'c',
+        'i64' : 'q',
+        'ui64' : 'Q',
+        'i32' : 'i',
+        'ui32' : 'I',
+        'i16' : 'h',
+        'ui6' : 'H',
+        'i8' : 'b',
+        'u8' : 'B'
+    }
 
+    format_string = '<'
+    format_string += (format_string_mapping['i32'])
+    format_string += (format_string_mapping['i32'])
+    format_string += (format_string_mapping['char'])
+
+    (
+        operand_one,
+        operand_two,
+        operation,
+    ) = struct.unpack(format_string, binary_string)
+
+    object = operation_msg(
+        operand_one,
+        operand_two,
+        operation,
+    )
+    #object.operand_one = operand_one
+    #object.operand_two = operand_two
+    #object.operation = operation
+
+    return object
+    
 
 def main():
     print("hello")
@@ -76,9 +110,15 @@ def main():
     # data for the reaction dataclass
     #print(struct.pack('<Ql', 6, 1023))
 
-    op = operation_msg(['a'], [1], 'b')
+    #op = operation_msg(['a'], [1], 'b')
 
-    print(op.operation)
+
+    binary_string = struct.pack('<iic', 1, 1023, bytes('a', 'utf-8'))
+
+
+    msg = operation_msg_unpack(binary_string)
+
+    print(msg.operand_two)
 
 if __name__ == '__main__':
     main()
