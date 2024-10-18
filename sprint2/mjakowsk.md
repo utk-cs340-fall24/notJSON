@@ -1,4 +1,4 @@
-# Sprint n (1, 2, 3, or 4)
+# Sprint 2
 
 Name: Mikolaj Jakowski
 Github ID: mikojakowski@gmail.com
