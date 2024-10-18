@@ -1,0 +1,303 @@
+documentation/How_Conda_Works.md
+
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400   1) # Conda
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400   2) 
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400   3) Conda is a virtual environment manager for Python. With conda you can create a python
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400   4) environment with the specific packages and versions you want. You can easily switch
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400   5) between environment and make configuration files that are easy to share and replicate.
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400   6) It is also very efficient.
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400   7) 
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400   8) ## Example use case:
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400   9) 
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  10) Currently there is a feature of python that I want to use called type aliasing. This
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  11) is a feature only available in python 3.12. I could try and download the latest version
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  12) of python but that would be for my entire machine, and I might not want that. So I can
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  13) create an environment specifically for the notJSON tool and then install the version
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  14) of Python there. It is the same process for downloading packages you want. Then once I
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  15) have created a virtual environment with all the necessary software and requirements
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  16) installed I can export the environment into a requirements yml file, and then anyone
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  17) can use conda to recreate the environment based on the yml file.
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  18) 
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  19) 
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  20) ### Quick Tutorial
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  21) 
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  22) First i'll create a new conda environment:
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  23) 
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  24) ```
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  25) (base) UNIX conda create --name notJSON   
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  26) ```
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  27) 
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  28) Then I will activate the environment and list the packages installed:
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  29) 
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  30) ```
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  31) (notJSON) UNIX conda activate notJSON 
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  32) (notJSON) UNIX conda list                                                                                                                    
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  33) # packages in environment at /Users/Mikolaj/miniconda3/envs/notJSON:
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  34) #
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  35) # Name                    Version                   Build  Channel
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  36) 
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  37) ```
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  38) 
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  39) As you can see there is nothing installed. Next I will install python 3.12 and xmltodict
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  40) then list the installed packages.
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  41) 
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  42) ```
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  43) (notJSON) UNIX conda install python=3.12
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  44) (notJSON) UNIX conda install xmltodict
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  45) (notJSON) UNIX conda list
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  46) # packages in environment at /Users/Mikolaj/miniconda3/envs/notJSON:
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  47) #
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  48) # Name                    Version                   Build  Channel
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  49) bzip2                     1.0.8                h6c40b1e_6  
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  50) ca-certificates           2024.9.24            hecd8cb5_0  
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  51) expat                     2.6.3                h6d0c2b6_0  
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  52) libcxx                    14.0.6               h9765a3e_0  
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  53) libffi                    3.4.4                hecd8cb5_1  
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  54) ncurses                   6.4                  hcec6c5f_0  
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  55) openssl                   3.0.15               h46256e1_0  
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  56) pip                       24.2            py312hecd8cb5_0  
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  57) python                    3.12.7               hcd54a6c_0  
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  58) readline                  8.2                  hca72f7f_0  
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  59) setuptools                75.1.0          py312hecd8cb5_0  
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  60) sqlite                    3.45.3               h6c40b1e_0  
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  61) tk                        8.6.14               h4d00af3_0  
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  62) tzdata                    2024b                h04d1e81_0  
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  63) wheel                     0.44.0          py312hecd8cb5_0  
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  64) xmltodict                 0.13.0          py312hecd8cb5_0  
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  65) xz                        5.4.6                h6c40b1e_1  
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  66) zlib                      1.2.13               h4b97444_1  
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  67) 
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  68) ```
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  69) 
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  70) As you can see see it installed xmltodict and a lot of other stuff once python 3.12
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  71) was installed
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  72) 
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  73) If I want to I can export the specifications for the environemnt to a yml file like so:
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  74) 
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  75) ```
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  76) (notJSON) UNIX conda env export > notJSON_environment.yml                                                                                        
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  77) ```
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  78) 
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  79) Then notJSON_environment.yml will look like this:
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  80) ```
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  81) name: notJSON
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  82) channels:
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  83)   - defaults
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  84)   - conda-forge
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  85) dependencies:
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  86)   - bzip2=1.0.8=h6c40b1e_6
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  87)   - ca-certificates=2024.9.24=hecd8cb5_0
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  88)   - expat=2.6.3=h6d0c2b6_0
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  89)   - libcxx=14.0.6=h9765a3e_0
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  90)   - libffi=3.4.4=hecd8cb5_1
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  91)   - ncurses=6.4=hcec6c5f_0
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  92)   - openssl=3.0.15=h46256e1_0
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  93)   - pip=24.2=py312hecd8cb5_0
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  94)   - python=3.12.7=hcd54a6c_0
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  95)   - readline=8.2=hca72f7f_0
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  96)   - setuptools=75.1.0=py312hecd8cb5_0
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  97)   - sqlite=3.45.3=h6c40b1e_0
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  98)   - tk=8.6.14=h4d00af3_0
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400  99)   - tzdata=2024b=h04d1e81_0
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400 100)   - wheel=0.44.0=py312hecd8cb5_0
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400 101)   - xmltodict=0.13.0=py312hecd8cb5_0
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400 102)   - xz=5.4.6=h6c40b1e_1
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400 103)   - zlib=1.2.13=h4b97444_1
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400 104) prefix: /Users/Mikolaj/miniconda3/envs/notJSON
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400 105) ```
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400 106) 
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400 107) If I want to create an environment from the yml file I can run the following command:
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400 108) 
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400 109) ```
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400 110) conda env create -f environment.yml
+04aeda41 (Mikolaj Jakowski 2024-10-14 15:49:36 -0400 111) ```
+
+notJSON_environment.yml
+
+6aabec32 (Mikolaj Jakowski 2024-10-16 23:38:08 -0400  1) name: notJSON
+6aabec32 (Mikolaj Jakowski 2024-10-16 23:38:08 -0400  2) channels:
+6aabec32 (Mikolaj Jakowski 2024-10-16 23:38:08 -0400  3)   - defaults
+6aabec32 (Mikolaj Jakowski 2024-10-16 23:38:08 -0400  4)   - conda-forge
+6aabec32 (Mikolaj Jakowski 2024-10-16 23:38:08 -0400  5) dependencies:
+6aabec32 (Mikolaj Jakowski 2024-10-16 23:38:08 -0400  6)   - bzip2=1.0.8=h6c40b1e_6
+6aabec32 (Mikolaj Jakowski 2024-10-16 23:38:08 -0400  7)   - ca-certificates=2024.9.24=hecd8cb5_0
+6aabec32 (Mikolaj Jakowski 2024-10-16 23:38:08 -0400  8)   - expat=2.6.3=h6d0c2b6_0
+6aabec32 (Mikolaj Jakowski 2024-10-16 23:38:08 -0400  9)   - libcxx=14.0.6=h9765a3e_0
+6aabec32 (Mikolaj Jakowski 2024-10-16 23:38:08 -0400 10)   - libffi=3.4.4=hecd8cb5_1
+6aabec32 (Mikolaj Jakowski 2024-10-16 23:38:08 -0400 11)   - ncurses=6.4=hcec6c5f_0
+6aabec32 (Mikolaj Jakowski 2024-10-16 23:38:08 -0400 12)   - openssl=3.0.15=h46256e1_0
+6aabec32 (Mikolaj Jakowski 2024-10-16 23:38:08 -0400 13)   - pip=24.2=py312hecd8cb5_0
+6aabec32 (Mikolaj Jakowski 2024-10-16 23:38:08 -0400 14)   - python=3.12.7=hcd54a6c_0
+6aabec32 (Mikolaj Jakowski 2024-10-16 23:38:08 -0400 15)   - readline=8.2=hca72f7f_0
+6aabec32 (Mikolaj Jakowski 2024-10-16 23:38:08 -0400 16)   - setuptools=75.1.0=py312hecd8cb5_0
+6aabec32 (Mikolaj Jakowski 2024-10-16 23:38:08 -0400 17)   - sqlite=3.45.3=h6c40b1e_0
+6aabec32 (Mikolaj Jakowski 2024-10-16 23:38:08 -0400 18)   - tk=8.6.14=h4d00af3_0
+6aabec32 (Mikolaj Jakowski 2024-10-16 23:38:08 -0400 19)   - tzdata=2024b=h04d1e81_0
+6aabec32 (Mikolaj Jakowski 2024-10-16 23:38:08 -0400 20)   - wheel=0.44.0=py312hecd8cb5_0
+6aabec32 (Mikolaj Jakowski 2024-10-16 23:38:08 -0400 21)   - xmltodict=0.13.0=py312hecd8cb5_0
+6aabec32 (Mikolaj Jakowski 2024-10-16 23:38:08 -0400 22)   - xz=5.4.6=h6c40b1e_1
+6aabec32 (Mikolaj Jakowski 2024-10-16 23:38:08 -0400 23)   - zlib=1.2.13=h4b97444_1
+
+examples/example_client.py312hecd8cb5_0
+
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400  16) from typing import TypeAlias
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400  17) 
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400  18) #typedef char * string;
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400  19) #typedef int64_t i64;
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400  20) #typedef uint64_t u64;
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400  21) #typedef int32_t i32;
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400  22) #typedef uint32_t u32;
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400  23) #typedef int16_t i16;
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400  24) #typedef uint16_t u16;
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400  25) #typedef int8_t i8;
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400  26) #typedef uint8_t u8;
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400  27) #typedef time_t timestamp;
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400  28) #typedef bool boolean;
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400  29) 
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400  30) string : TypeAlias = str
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400  31) char : TypeAlias = str
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400  32) i64 : TypeAlias = ctypes.c_int64
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  33) u64 : TypeAlias = ctypes.c_uint64
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  34) i32 : TypeAlias = ctypes.c_int32
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400  35) u32 : TypeAlias = ctypes.c_uint32
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  36) i16 : TypeAlias = ctypes.c_int16
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  37) u16 : TypeAlias = ctypes.c_uint16
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  38) i8 : TypeAlias = ctypes.c_int8
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  39) u8 : TypeAlias = ctypes.c_uint8
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400  40) size_t : TypeAlias = ctypes.c_size_t
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  42) 
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400  49) #@dataclass
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  50) #class operation_msg:
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  51)     #random_chars : list[char]
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  52)     ##random_chars_count : size_t
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  53)     #operands : list[u32]
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  54)     ##operands_count : size_t
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  55)     #operation : char
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400  56) 
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400  58) class operation_msg:
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  59)     operand_one : i32
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  60)     operand_two : i32
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400  61)     operation : char
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400  62) 
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  63) def operation_msg_unpack (binary_string) -> operation_msg:
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  64)     format_string_mapping = {
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  65)         'string' : 'q',
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  66)         'char' : 'c',
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  67)         'i64' : 'q',
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  68)         'ui64' : 'Q',
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  69)         'i32' : 'i',
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  70)         'ui32' : 'I',
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  71)         'i16' : 'h',
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  72)         'ui6' : 'H',
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  73)         'i8' : 'b',
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  74)         'u8' : 'B'
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  75)     }
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  76) 
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  77)     format_string = '<'
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  78)     format_string += (format_string_mapping['i32'])
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  79)     format_string += (format_string_mapping['i32'])
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  80)     format_string += (format_string_mapping['char'])
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  81) 
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  82)     (
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  83)         operand_one,
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  84)         operand_two,
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  85)         operation,
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  86)     ) = struct.unpack(format_string, binary_string)
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  87) 
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  88)     object = operation_msg(
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  89)         operand_one,
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  90)         operand_two,
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  91)         operation,
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  92)     )
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  93)     #object.operand_one = operand_one
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  94)     #object.operand_two = operand_two
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  95)     #object.operation = operation
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  96) 
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  97)     return object
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  98)     
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400 111)     #print(struct.pack('<Ql', 6, 1023))
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400 112) 
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400 113)     #op = operation_msg(['a'], [1], 'b')
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400 114) 
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400 115) 
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400 116)     binary_string = struct.pack('<iic', 1, 1023, bytes('a', 'utf-8'))
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400 117) 
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400 118) 
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400 119)     msg = operation_msg_unpack(binary_string)
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400 121)     print(msg.operand_two)
+
+
+templates/python_client.py
+
+
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400   5) from typing import TypeAlias
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400   6) 
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400   7) string : TypeAlias = str
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400   8) char : TypeAlias = str
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400   9) i64 : TypeAlias = ctypes.c_int64
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400  10) u64 : TypeAlias = ctypes.c_uint64
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400  11) i32 : TypeAlias = ctypes.c_int32
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400  12) u32 : TypeAlias = ctypes.c_uint32
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400  13) i16 : TypeAlias = ctypes.c_int16
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400  14) u16 : TypeAlias = ctypes.c_uint16
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400  15) i8 : TypeAlias = ctypes.c_int8
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400  16) u8 : TypeAlias = ctypes.c_uint8
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400  17) size_t : TypeAlias = ctypes.c_size_t
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400  18) 
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400  19) 
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400  27)     {{field.name}} : list[{{ field.type_field}}] 
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400  29)     {% if field.name != "padding" %}
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400  30)     {{ field.name }} : {{ field.type_field }}
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400  31)     {% endif %}
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  37) {% for message in messages %}
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  38) 
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  39) def {{ message.name }}_unpack(binary_string) -> {{ message.name }}:
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  40)   format_string_mapping = {
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  41)     'string' : 'q',
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  42)     'char' : 'c',
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  43)     'i64' : 'q',
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  44)     'ui64' : 'Q',
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  45)     'i32' : 'i',
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  46)     'ui32' : 'I',
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  47)     'i16' : 'h',
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  48)     'ui6' : 'H',
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  49)     'i8' : 'b',
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  50)     'u8' : 'B'
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  51)   }
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  52) 
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  53)   format_string = '<'
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  54)   {% for field in message.fields %}
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  55)   {% if field.array %}
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  56)   {{field.name}} : list[{{ field.type_field}}] 
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  57)   {% else %}
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  58)   {% if field.name != "padding" %}
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  59)   format_string += format_string_mapping['{{ field.type_field}}']
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  60)   {% endif %}
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  61)   {% endif %}
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  62)   {% endfor %}
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  63) 
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  64)   (
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  65)     {% for field in message.fields %}
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  66)     {% if field.name != "padding" %}
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  67)     {{field.name}},
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  68)     {% endif %}
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  69)     {% endfor %}
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  70)   ) = struct.unpack(format_string, binary_string) 
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  71) 
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  72)   object = {{ message.name }} (
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  73)     {% for field in message.fields %}
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  74)     {% if field.name != "padding" %}
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  75)     {{field.name}},
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  76)     {% endif %}
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  77)     {% endfor %}
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  78)   ) 
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  79) 
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  80)   return object
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  81) 
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  82) {% endfor %}
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  83) 
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400  95)     #print(struct.pack('<Ql', 6, 1023))
+093013d6 (Mikolaj Jakowski 2024-10-16 21:39:18 -0400  96) 
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  97)     binary_string = struct.pack('<iic', 1, 1023, bytes('a', 'utf-8'))
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  98)     msg = operation_msg_unpack(binary_string)
+efbb2a86 (Mikolaj Jakowski 2024-10-16 23:29:54 -0400  99)     print(msg.operand_two)
