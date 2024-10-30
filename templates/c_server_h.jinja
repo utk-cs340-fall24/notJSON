@@ -55,3 +55,13 @@ typedef bool boolean;
 
   {{ message.name }} {{ message.name }}_unpack(const u8* message);
 {% endfor %}
+
+{% for procedure in procedures %}
+  /* {{ procedure.description }} */
+  size_t {{ procedure.name }}(
+  {% for param in procedure.parameters %}
+    {{ param.type_field }} {{ param.name }},
+  {% endfor %}
+  u8 **out
+  );
+  {% endfor %}

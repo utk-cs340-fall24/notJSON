@@ -3,11 +3,15 @@
 #include <stdbool.h>
 #include <time.h>
 #include <stdlib.h>
+#include <arpa/inet.h>
+#include <stdio.h>
+#include <unistd.h>
+
 #include "{{ output_file.split('/')[1].split('.')[0] }}.h"
 
 {% for message in messages -%}
   size_t {{ message.name }}_pack(const {{ message.name }}* struct_{{ message.name }}, u8** out) {
-  size_t metadata_size = sizeof(u8) + sizeof(u8) + (({{ message.metadata.optionals_count }} + 7) / 8) * sizeof(u8);
+  size_t metadata_size = sizeof(u8) * 3 + (({{ message.metadata.optionals_count }} + 7) / 8) * sizeof(u8);
   ssize_t optional_index = 0;
 
   {% set has_array_fields = namespace(value=False) %}
@@ -44,8 +48,10 @@
   {% endif %}
   }
 
+  {% if has_array_fields.value %}
   variable_space = {{ message.name.upper() }}_PACKED_SIZE + metadata_size;
-  u8* optional = *out + 2;
+  {% endif %}
+  u8* optional = *out + 3;
   (*out)[0] = {{ message.metadata.message_identifier }};
   (*out)[1] = {{ message.metadata.version_number }};
 
@@ -78,12 +84,16 @@
     {% set current_offset.value = current_offset.value + field.size %}
   {% endfor %}
 
-  return variable_space;
+  {% if has_array_fields.value %}
+    return variable_space;
+  {% else %}
+    return {{ message.name.upper() }}_PACKED_SIZE + metadata_size;
+  {% endif %}
   }
 
   {% set current_offset.value = 0 %}
   {% set current_optional = namespace(value = 0) %}
-  {% set metadata_offset = 2 +(message.metadata.optionals_count + 7) // 8 %}
+  {% set metadata_offset = 3 +(message.metadata.optionals_count + 7) // 8 %}
   {% for field in message.fields %}
     {% if not field.padding %}
       {% if field.array %}
@@ -132,5 +142,105 @@
 {% endfor %}
 
 {% for procedure in procedures %}
-  void {{ procedure.name }}(void);
+  /* {{ procedure.description }} */
+  size_t {{ procedure.name }}(
+  {% for param in procedure.parameters %}
+    {{ param.type_field }} {{ param.name }},
+  {% endfor %}
+  u8 **out
+  ) {
+  {{ procedure.return_values[0].type_field }} return_val;
+
+  return {{ procedure.return_values[0].type_field }}_pack(&return_val, out);
+  }
 {% endfor %}
+
+#define PORT 8080
+#define BUFFER_SIZE 1024
+
+// Function to handle incoming data
+size_t handle_request(const u8 *input, u8 **output) {
+  switch (input[2]) {
+    {% for element in procedures %}
+  case {{ loop.index0 }}: {
+    {{ element.parameters[0].type_field }} arg = {{ element.parameters[0].type_field }}_unpack(input);
+      return {{ element.name }}(arg, output);
+  }
+    {% endfor %}
+      default:
+      puts("unsupported operation");
+  }
+
+    return 0;
+}
+
+int main() {
+  int server_fd, new_socket;
+  struct sockaddr_in address;
+  int opt = 1;
+  int addrlen = sizeof(address);
+  u8 buffer[BUFFER_SIZE] = {0};
+  u8* response = NULL;
+
+  // Create socket file descriptor
+  if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
+    perror("socket failed");
+    exit(EXIT_FAILURE);
+  }
+
+  // Set socket options
+  if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
+    perror("setsockopt");
+    exit(EXIT_FAILURE);
+  }
+
+  // Define the address
+  address.sin_family = AF_INET;
+  address.sin_addr.s_addr = INADDR_ANY;
+  address.sin_port = htons(PORT);
+
+  // Bind the socket to the address
+  if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
+    perror("bind failed");
+    exit(EXIT_FAILURE);
+  }
+
+  // Listen for incoming connections
+  if (listen(server_fd, 3) < 0) {
+    perror("listen");
+    exit(EXIT_FAILURE);
+  }
+
+  printf("Server is listening on port %d\n", PORT);
+
+  while (1) {
+    // Accept a connection
+    if ((new_socket = accept(server_fd, (struct sockaddr *)&address,
+                             (socklen_t *)&addrlen)) < 0) {
+      perror("accept");
+      exit(EXIT_FAILURE);
+    }
+
+    // Read data from the client
+    int bytes_read = read(new_socket, buffer, BUFFER_SIZE);
+    if (bytes_read < 0) {
+      perror("read");
+      close(new_socket);
+      continue;
+    }
+
+    // Null terminate the received data
+    buffer[bytes_read] = '\0';
+
+    // Handle the request
+    size_t response_size = handle_request(buffer, &response);
+
+    // Send the response back to the client
+    send(new_socket, response, response_size, 0);
+
+    // Close the socket for this client
+    close(new_socket);
+  }
+
+  return 0;
+}
