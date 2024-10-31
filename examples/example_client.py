@@ -15,6 +15,7 @@ import requests
 import struct
 from typing import TypeAlias
 import pprint
+import socket
 
 #typedef char * string;
 #typedef int64_t i64;
@@ -146,6 +147,21 @@ def main():
     bin_string = operation_msg_pack(ex_operation_msg)
 
     print(f'binary string: {bin_string}')
+
+    s = socket.socket()
+
+    # Define the port on which you want to connect
+    port = 60221 
+
+    # connect to the server on local computer
+    s.connect(('127.0.0.1', port))
+
+    # send the binary string that represents the packaged message
+    s.send(bin_string)
+    # close the connection
+    s.close()
+
+    
     
 if __name__ == '__main__':
     main()
