@@ -79,6 +79,42 @@ def {{ message.name }}_unpack(binary_string) -> {{ message.name }}:
 
   return object
 
+
+def {{ message.name }}_pack({{ message.name }}_var):
+  format_string_mapping = {
+      'string' : 'q',
+      'char' : 'B',
+      'i64' : 'q',
+      'ui64' : 'Q',
+      'i32' : 'i',
+      'ui32' : 'I',
+      'i16' : 'h',
+      'ui6' : 'H',
+      'i8' : 'b',
+      'u8' : 'B'
+  }
+
+  format_string = '<'
+  {% for field in message.fields %}
+  {% if field.array %}
+  {{field.name}} : list[{{ field.type_field}}] 
+  {% else %}
+  {% if field.name != "padding" %}
+  format_string += format_string_mapping['{{ field.type_field}}']
+  {% endif %}
+  {% endif %}
+  {% endfor %}
+
+  bin_string = struct.pack(format_string,
+                            {% for field in message.fields %}
+                            {% if field.name != "padding" %}
+                            getattr({{ message.name }}_var, '{{field.name}}'),
+                            {% endif %}
+                            {% endfor %}
+                            )
+
+  return bin_string
+
 {% endfor %}
 
 def main():
@@ -90,14 +126,35 @@ def main():
     print(x.status_code)
 
 
-    # use method 1 (sruct library) to print a binary blob of filler
-    # data for the reaction dataclass
-    #print(struct.pack('<Ql', 6, 1023))
+    {% for message in messages -%}
+    #prompt users to populate example instance of {{ message.name }} class
+    variables = (vars(operation_msg)['__annotations__'])
+    var_names = list(variables.keys())  
+    var_types = list(variables.values())  
 
-    binary_string = struct.pack('<iic', 1, 1023, bytes('a', 'utf-8'))
-    msg = operation_msg_unpack(binary_string)
-    print(msg.operand_two)
+    ex_{{message.name}}_input_list = []
 
+    for index, name in enumerate(var_names):
+        ex_{{message.name}}_input_list.append(
+             int(input("Enter value for " + name + ': ')) )
+
+    ex_{{message.name}} = {{message.name}}(
+      {% for field in message.fields %}
+      {% if field.array %}
+      {{field.name}} : list[{{ field.type_field}}] 
+      {% else %}
+      {% if field.name != "padding" %}
+      ex_{{message.name}}_input_list[{{loop.index0}}],
+      {% endif %}
+      {% endif %}
+      {% endfor %}
+    )
+
+    bin_string = operation_msg_pack(ex_operation_msg)
+
+    print(f'binary string: {bin_string}')
+
+    {% endfor %}
 
 if __name__ == '__main__':
     main()
