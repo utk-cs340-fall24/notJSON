@@ -47,14 +47,6 @@ typedict = {
 }
 
 
-#@dataclass
-#class operation_msg:
-    #random_chars : list[char]
-    ##random_chars_count : size_t
-    #operands : list[u32]
-    ##operands_count : size_t
-    #operation : char
-
 @dataclass
 class operation_msg:
     operand_one : i32
@@ -64,7 +56,6 @@ class operation_msg:
 def operation_msg_unpack (binary_string) -> operation_msg:
     format_string_mapping = {
         'string' : 'q',
-        #'char' : 'c',
         'char' : 'B',
         'i64' : 'q',
         'ui64' : 'Q',
@@ -92,16 +83,12 @@ def operation_msg_unpack (binary_string) -> operation_msg:
         operand_two,
         operation,
     )
-    #object.operand_one = operand_one
-    #object.operand_two = operand_two
-    #object.operation = operation
 
     return object
     
 def operation_msg_pack(operation_msg_var):
     format_string_mapping = {
         'string' : 'q',
-        #'char' : 'c',
         'char' : 'B',
         'i64' : 'q',
         'ui64' : 'Q',
@@ -138,9 +125,6 @@ def main():
     # data for the reaction dataclass
     binary_string = struct.pack('<iic', 1, 1023, bytes('a', 'utf-8'))
     msg = operation_msg_unpack(binary_string)
-    print(msg.operand_two)
-    print(msg.operation)
-
 
     #prompt users to populate example instance of class
     variables = (vars(operation_msg)['__annotations__'])
@@ -150,13 +134,8 @@ def main():
     ex_operation_msg_input_list = []
 
     for index, name in enumerate(var_names):
-        t = var_types[index]
-        print(t)
         ex_operation_msg_input_list.append(
              int(input("Enter value for " + name + ': ')) )
-
-        
-    print(ex_operation_msg_input_list)
 
     ex_operation_msg = operation_msg(
         ex_operation_msg_input_list[0],
@@ -164,15 +143,9 @@ def main():
         ex_operation_msg_input_list[2],
     )
 
-    print('types')
-    print(type(getattr(ex_operation_msg, 'operand_one')))
-    print(type(ex_operation_msg.operation))
-
     bin_string = operation_msg_pack(ex_operation_msg)
 
-    #]print("Your binary string is: {0:b}".format(bin_string))
-    print('binary string')
-    print(bin_string)
+    print(f'binary string: {bin_string}')
     
 if __name__ == '__main__':
     main()
