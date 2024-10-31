@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema version="1.0.0">
+  <messages>
+    <message name="operation">
+      <fields>
+        <field type="i32" required="true">operand_one</field>
+        <field type="i32" required="true">operand_two</field>
+      </fields>
+    </message>
+    <message name="result">
+      <fields>
+        <field type="i32" required="true">res</field>
+      </fields>
+    </message>
+  </messages>
+  <procedures>
+    <procedure name = "addition">
+      <description>
+        Perform the operation provded and return the result
+      </description>
+      <parameters>
+        <field type="operation" required="true">ops</field>
+      </parameters>
+      <returns>
+        <field type="result">result</field>
+      </returns>
+    </procedure>
+    <procedure name = "subtraction">
+      <description>
+        Perform the operation provded and return the result
+      </description>
+      <parameters>
+        <field type="operation" required="true">ops</field>
+      </parameters>
+      <returns>
+        <field type="result">result</field>
+      </returns>
+    </procedure>
+    <procedure name = "multiplication">
+      <description>
+        Perform the operation provded and return the result
+      </description>
+      <parameters>
+        <field type="operation" required="true">ops</field>
+      </parameters>
+      <returns>
+        <field type="result">result</field>
+      </returns>
+    </procedure>
+    <procedure name = "division">
+      <description>
+        Perform the operation provded and return the result
+      </description>
+      <parameters>
+        <field type="operation" required="true">ops</field>
+      </parameters>
+      <returns>
+        <field type="result">result</field>
+      </returns>
+    </procedure>
+  </procedures>
+</schema>
