@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema version="1.0.0">
+  <messages>
+    <message name="child">
+      <fields>
+        <field type="i64" required="true">another_number</field>
+      </fields>
+    </message>
+    <message name="parent">
+      <fields>
+        <field type="i64" required="true">number</field>
+        <field type="child" required="true">my_child</field>
+      </fields>
+    </message>
+  </messages>
+  <procedures>
+    <procedure name = "add1">
+      <description>
+        Submits a new chat message along with the users authentication token.
+      </description>
+      <parameters>
+        <field type="parent" required="true">value</field>
+      </parameters>
+      <returns>
+        <field type="boolean">success</field>
+      </returns>
+    </procedure>
+  </procedures>
+</schema>
