@@ -4,6 +4,7 @@
 tmp/
 venv/
 output/
+node_modules/
 
 commits.txt
 blame-tracker.py

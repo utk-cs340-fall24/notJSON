@@ -1,0 +1,67 @@
+{% for message in messages %}
+class {{ message.name }} {
+  constructor(data = {}) {
+    {% for field in message.fields %}
+      this.{{ field.name }} = data.{{ field.name }} || {% if field.array %}[];{% else %}null;{% endif %}
+      this.{{ field.name }}_present = data.{{ field.name }} !== undefined;
+    {% endfor %}
+  }
+
+  pack() {
+    const buffer = [];
+    buffer.push(0, 0); // Placeholder for identifier/version
+
+    {% for field in message.fields %}
+      {% if field.array %}
+        if (this.{{ field.name }}_present) {
+          buffer.push(this.{{ field.name }}.length); // Store array length
+          buffer.push(...this.{{ field.name }});     // Store array elements
+        }
+      {% else %}
+        if (this.{{ field.name }}_present) {
+          buffer.push(this.{{ field.name }});
+        }
+      {% endif %}
+    {% endfor %}
+
+    return new Uint8Array(buffer);
+  }
+
+  static unpack(data) {
+    const obj = new {{ message.name }}();
+    const view = new DataView(data.buffer);
+    let offset = 2; // Skip the first two elements
+
+    {% for field in message.fields %}
+      {% if field.array %}
+        if (offset < data.length) {
+          const length = view.getUint32(offset, true); // Read the array length
+          offset += 4;
+          if (length > 0 && offset + length <= data.byteLength) { //ensure valid length
+		obj.{{ field.name }} = Array.from(new Uint8Array(data.buffer, offset, length));
+          	offset += length; // Ensure correct offset increment (1 byte per element)
+          } else {
+		obj.{{ field.name }} = [];
+	  } 
+	}
+	
+      {% else %}
+        if (offset < data.length) {
+          obj.{{ field.name }} = view.get{{ 'Uint' if field.unsigned else 'Int' }}{{ field.size * 8 }}(offset, true);
+          offset += {{ field.size }}; // Update offset by field size
+        }
+      {% endif %}
+      obj.{{ field.name }}_present = obj.{{ field.name }} !== undefined; // Presence check
+    {% endfor %}
+
+    return obj;
+  }
+}
+{% endfor %}
+
+// Procedure definitions
+module.exports = {
+  {% for message in messages %}
+  "{{ message.name }}": {{ message.name }}{% if not loop.last %}, {% endif %}
+  {% endfor %}
+};
