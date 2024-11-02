@@ -1,0 +1,217 @@
+client.js
+
+9877def0 (Jason West   2024-10-31 09:32:13 -0400  2) //const fetch = require('node-fetch');  // Make sure node-fetch is available
+9877def0 (Jason West   2024-10-31 09:32:13 -0400  3) //const { pack, unpack } = require('../../output/optional');
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 11)        console.log('Fields received:', fields);
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 12)        const message = {
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 13)                Greeting: fields.Greeting || '',
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 14)                Name: fields.Name,
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 15)                num: fields.num || 0
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 16)        };
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 17)       // const encoded_message = operation_msg.pack(message);
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 18)       // return encoded_message;
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 19)            /*
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 20)            let metadata = {
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 24)            };
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 25)            */
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 26)            //converting metadata object into a JSON string then converting to binary (Buffer)
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 27)        try {
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 28)                //const encoded_message = operation_msg.pack(message);
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 29)                const encoded_message = Buffer.from(JSON.stringify(message));
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 30)                return encoded_message;
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 31)        } catch (error) {
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 32)                console.error('Failed to encode message:', error);
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 33)                throw new Error('Encoding error');
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 34)        }
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 38)            //decoding the message from binary buffer
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 39)        try{
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 40)            let decoded_message = JSON.parse(encodedMessage.toString());
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 41)            //const decoded_message = operation_msg.unpack(encodedMessage);
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 42)            return decoded_message;
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 43)        } catch (error) {
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 44)            console.error('Failed to decode message:', encodedMessage.toString());
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 45)            throw new Error('Decoding error: Received unexpected format');
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 46)        }
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 47)    }
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 48)
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 51)              const encoded_message = this.encodeMessage(message_type, version, fields);
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 52)              const response = await fetch(`${this.base_url}/api/sendMessage`, {
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 60)                    const errorText = await response.text(); //getting error text for more details
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 61)                    console.error('Server Error:', errorText);                     
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 62)                    throw new Error('Failed to send message');
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 65)              const response_body = await response.arrayBuffer();
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 66)              return this.decodeMessage(Buffer.from(response_body));
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 69)         async receiveMessage() {
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 70)          const response = await fetch(`${this.base_url}/api/receiveMessage`, {
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 74)          const response_body = await response.arrayBuffer();
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 75)          return this.decodeMessage(Buffer.from(response_body));
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 81) client.sendMessage(1, 1, { Greeting: 'Hello', Name: 'client' })
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 83)          //console.log(`Response from server: Greeting - ${response.Greeting}, Name - ${response.Name},
+
+Number - ${response.num}`);
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 89)
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 90) client.receiveMessage()
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 91)     .then(received => {
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 92)        //:console.log(`Message from server: Greeting - ${received.Greeting}, Name - ${received.Name},
+Number - ${received.num}`);
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 93)     })
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 94)     .catch(error => {
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 95)        console.error('Error receiving message:', error);
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 96)     });
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 97)
+
+server.js
+
+9877def0 (Jason West   2024-10-31 09:32:13 -0400  2) const readline = require('readline');
+9877def0 (Jason West   2024-10-31 09:32:13 -0400  3) const { operation_msg } = require('./output/optional');
+9877def0 (Jason West   2024-10-31 09:32:13 -0400  7) obj.use(express.raw({ type: 'application/octet-stream' }));
+9877def0 (Jason West   2024-10-31 09:32:13 -0400  8) //obj.use(express.json());
+9877def0 (Jason West   2024-10-31 09:32:13 -0400  9)
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 10) const rl = readline.createInterface({
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 11)    input: process.stdin,
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 12)    output: process.stdout
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 15) function promptUser(query) {
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 16)    return new Promise((resolve) => rl.question(query, resolve));
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 17) }
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 18)
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 19) let initialGreeting = '';
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 20) let initialName = '';
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 21)
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 22) obj.post('/api/sendMessage', (req, res) => {  
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 23)     try {
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 24)    console.log('Raw request body:', req.body);
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 25)    const receivedData = operation_msg.unpack(req.body);
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 26)    //const receivedData = req.body;  // Directly use JSON for testing
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 27)    console.log('Unpacked message:', receivedData);
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 28)
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 29)    const greeting = receivedData.Greeting || initialGreeting;
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 30)    const name = receivedData.Name || initialName;
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 31)    const num = receivedData.num || 'optional';
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 32)
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 33)    console.log(`Server received: Greeting - ${greeting}, Name - ${name}, Number - ${num}`);
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 34)
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 35)    // Respond to the client with a modified message
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 36)    //const responseMessage = optional.operation_msg.pack({
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 37)    const responseMessage = new operation_msg({
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 38)            Greeting: `${greeting} ${name}`,
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 39)            Name: 'Server',
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 40)            num: 400 // example response number
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 41)    }).pack();
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 42)
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 43)    console.log('Sending response:', responseMessage);
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 44)    res.send(responseMessage);
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 45)     } catch (error) {
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 46)    console.error('Error processing message:', error);
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 47)         res.status(400).json({ error: 'Failed to process the message' }); // Return JSON error
+response
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 48)     }
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 49) });
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 50)
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 51) obj.get('/api/receiveMessage', (req, res) => {
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 52)    try {
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 53)            const responseMessage = new operation_msg({
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 54)                    Greeting: 'Hello from server',
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 55)                    Name: 'Server',
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 56)                    num: 100  // Example number
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 57)            }).pack();
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 58)
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 59)            console.log('Sending message to client:', responseMessage);
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 60)
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 61)            res.setHeader('Content-Type', 'application/octet-stream'); 
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 62)            res.send(responseMessage);
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 63)    } catch (error) {
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 64)            console.error('Error sending message:', error);
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 65)            res.status(400).json({ error: 'Failed to send the message' });
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 66)    }
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 68)
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 69) //const { chat_message } = require('./output/optional');
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 70)
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 71) //starting the server and listening on port 8080
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 72) async function startServer() {
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 73)    console.log(`Server running at http://localhost:${port}`);
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 74)
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 75)    initialGreeting = await promptUser('Please input your message: Greeting (Optional): ');
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 76)    initialName = await promptUser('Name: ');
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 77)
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 78)    console.log(`Initial message: Greeting: ${initialGreeting}, Name: ${initialName}`);
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 79)
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 80)    console.log('Writer: Sent data, waiting for client response...');
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 81)    rl.close();
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 82)
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 83)    obj.listen(port, () => {
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 84)            console.log(`Server is listening on port ${port}`);
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 85)    });
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 86) }
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 87)
+9877def0 (Jason West   2024-10-31 09:32:13 -0400 88) startServer().catch(console.error);
+
+js_server.jinja
+
+9877def0 (Jason West 2024-10-31 09:32:13 -0400  1) {% for message in messages %}
+9877def0 (Jason West 2024-10-31 09:32:13 -0400  2) class {{ message.name }} {
+9877def0 (Jason West 2024-10-31 09:32:13 -0400  3)   constructor(data = {}) {
+9877def0 (Jason West 2024-10-31 09:32:13 -0400  4)     {% for field in message.fields %}
+9877def0 (Jason West 2024-10-31 09:32:13 -0400  5)       this.{{ field.name }} = data.{{ field.name }} || {% if field.array %}[];{% else %}null;{% endif %}
+9877def0 (Jason West 2024-10-31 09:32:13 -0400  6)       this.{{ field.name }}_present = data.{{ field.name }} !== undefined;
+9877def0 (Jason West 2024-10-31 09:32:13 -0400  7)     {% endfor %}
+9877def0 (Jason West 2024-10-31 09:32:13 -0400  8)   }
+9877def0 (Jason West 2024-10-31 09:32:13 -0400  9)
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 10)   pack() {
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 11)     const buffer = [];               
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 12)     buffer.push(0, 0); // Placeholder for identifier/version
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 13)
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 14)     {% for field in message.fields %}
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 15)       {% if field.array %}
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 16)         if (this.{{ field.name }}_present) {
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 17)           buffer.push(this.{{ field.name }}.length); // Store array length
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 18)           buffer.push(...this.{{ field.name }});     // Store array elements
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 19)         }
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 20)       {% else %}
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 21)         if (this.{{ field.name }}_present) {
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 22)           buffer.push(this.{{ field.name }});
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 23)         }
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 24)       {% endif %}
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 25)     {% endfor %}
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 26)
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 27)     return new Uint8Array(buffer);
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 28)   }
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 29)
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 30)   static unpack(data) {
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 31)     const obj = new {{ message.name }}();
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 32)     const view = new DataView(data.buffer);
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 33)     let offset = 2; // Skip the first two elements
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 34)
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 35)     {% for field in message.fields %}
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 36)       {% if field.array %}
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 37)         if (offset < data.length) {
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 38)           const length = view.getUint32(offset, true); // Read the array length
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 39)           offset += 4;
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 40)           if (length > 0 && offset + length <= data.byteLength) { //ensure valid length
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 41)              obj.{{ field.name }} = Array.from(new Uint8Array(data.buffer, offset, length));
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 42)              offset += length; // Ensure correct offset increment (1 byte per element)
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 43)           } else {
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 44)              obj.{{ field.name }} = [];
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 45)        }
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 46)      }
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 47)
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 48)       {% else %}
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 49)         if (offset < data.length) {
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 50)           obj.{{ field.name }} = view.get{{ 'Uint' if field.unsigned else 'Int' }}{{ field.size * 8
+}}(offset, true);                                                                  
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 51)           offset += {{ field.size }}; // Update offset by field size
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 52)         }
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 53)       {% endif %}
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 54)       obj.{{ field.name }}_present = obj.{{ field.name }} !== undefined; // Presence check
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 55)     {% endfor %}
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 56)
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 57)     return obj;
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 58)   }
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 59) }
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 60) {% endfor %}
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 61)
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 62) // Procedure definitions
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 63) module.exports = {
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 64)   {% for message in messages %}
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 65)   "{{ message.name }}": {{ message.name }}{% if not loop.last %}, {% endif %}
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 66)   {% endfor %}
+9877def0 (Jason West 2024-10-31 09:32:13 -0400 67) };
