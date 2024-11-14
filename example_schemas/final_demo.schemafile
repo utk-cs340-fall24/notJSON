@@ -8,6 +8,11 @@
         <field type="timestamp" required="true">time</field>
       </fields>
     </message>
+    <message name="request">
+      <fields>
+        <field type="timestamp" required="true">ignored</field>
+      </fields>
+    </message>
   </messages>
   <procedures>
     <procedure name = "send_message">
@@ -26,6 +31,7 @@
         Get the latest message from the server
       </description>
       <parameters>
+        <field type="request" required="true">request</field>
       </parameters>
       <returns>
         <field type="chat_message">result</field>
