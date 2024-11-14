@@ -1,0 +1,56 @@
+const net = require('net');
+
+const HOST = 'localhost';
+const PORT = 8080;
+
+const CLIENT_STATE = {
+    packet: {{ packet_data | default('default_value') | tojson }},
+    field_type: 'integer',
+    output: '',
+    data: {
+        {% for field in fields %}
+            {{ field.name }}: {{ field.initial_value }},
+        {% endfor %}
+    }
+};
+
+// Preprocess data to fit field types
+function preprocessData() {
+    {% for field in fields %}
+        if (CLIENT_STATE.data['{{ field.name }}'] === undefined) {
+            CLIENT_STATE.data['{{ field.name }}'] = {{ field.default_value }};
+        }
+    {% endfor %}
+}
+
+// Send the packet with the data to the server
+function sendPacketToServer() {
+    const packet = {
+        packet_type: CLIENT_STATE.packet,
+        fields: CLIENT_STATE.data
+    };
+
+    const client = new net.Socket();
+    client.connect(PORT, HOST, () => {
+        console.log('Connected to server');
+        client.write(JSON.stringify(packet));  // Send data to server
+    });
+
+    client.on('data', (data) => {
+        console.log('Received:', data.toString());
+        client.destroy(); // Close the connection
+    });
+
+    client.on('error', (err) => {
+        console.error('Error sending packet:', err);
+    });
+}
+
+// Main function to execute the client-side logic
+function main() {
+    preprocessData();
+    sendPacketToServer();
+}
+
+// Execute the main function
+main();
