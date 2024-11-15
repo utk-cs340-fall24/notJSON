@@ -1,0 +1,113 @@
+import struct
+from typing import TypeAlias
+import ctypes
+
+string : TypeAlias = str
+char : TypeAlias = str
+i64 : TypeAlias = ctypes.c_int64
+u64 : TypeAlias = ctypes.c_uint64
+i32 : TypeAlias = ctypes.c_int32
+u32 : TypeAlias = ctypes.c_uint32
+i16 : TypeAlias = ctypes.c_int16
+u16 : TypeAlias = ctypes.c_uint16
+i8 : TypeAlias = ctypes.c_int8
+u8 : TypeAlias = ctypes.c_uint8
+size_t : TypeAlias = ctypes.c_size_t
+
+
+{% for message in messages -%}
+@dataclass
+class {{ message.name }} :
+  {% for field in message.fields %}
+    {% if field.array %}
+    {{field.name}} : list[{{ field.type_field}}] 
+    {% else %}
+    {% if field.name != "padding" %}
+    {{ field.name }} : {{ field.type_field }}
+    {% endif %}
+    {% endif %}
+  {% endfor %}
+
+{% endfor %}
+
+{% for message in messages %}
+
+def {{ message.name }}_unpack(binary_string) -> {{ message.name }}:
+  format_string_mapping = {
+    'string' : 'q',
+    'char' : 'c',
+    'i64' : 'q',
+    'ui64' : 'Q',
+    'i32' : 'i',
+    'ui32' : 'I',
+    'i16' : 'h',
+    'ui6' : 'H',
+    'i8' : 'b',
+    'u8' : 'B'
+  }
+
+  format_string = '<'
+  {% for field in message.fields %}
+  {% if field.array %}
+  {{field.name}} : list[{{ field.type_field}}] 
+  {% else %}
+  {% if field.name != "padding" %}
+  format_string += format_string_mapping['{{ field.type_field}}']
+  {% endif %}
+  {% endif %}
+  {% endfor %}
+
+  (
+    {% for field in message.fields %}
+    {% if field.name != "padding" %}
+    {{field.name}},
+    {% endif %}
+    {% endfor %}
+  ) = struct.unpack(format_string, binary_string) 
+
+  object = {{ message.name }} (
+    {% for field in message.fields %}
+    {% if field.name != "padding" %}
+    {{field.name}},
+    {% endif %}
+    {% endfor %}
+  ) 
+
+  return object
+
+
+
+# Socket is used for networking
+import socket
+
+def main(): 
+    #create a socket
+    s = socket.socket()
+    print("Socket succesfully created")
+
+    #select a random port
+    #port = 60221
+    port = 8080
+
+    # take any incoming connections from the localhost
+    # in this demo we are only looking at connection between 
+    # local process
+    s.bind(('localhost', port))
+    s.listen(5)
+
+    while True:
+        # Establish connection with client.
+        c, addr = s.accept()
+        print ('Got connection from', addr )
+
+        # receive message from client
+        bin_string = c.recv(1024)
+
+        print(bin_string)
+
+        # Close the connection with the client
+        c.close()
+
+
+if __name__ == '__main__':
+    main()
