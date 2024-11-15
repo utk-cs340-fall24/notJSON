@@ -1,0 +1,305 @@
+examples/demo_client.py
+
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500   1) from dataclasses import dataclass
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500   2) import ctypes
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500   3) import requests
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500   4) import struct
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500   5) from typing import TypeAlias
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500   6) import pprint
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500   7) import socket
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500   8) 
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500   9) #typedef char * string;
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  10) #typedef int64_t i64;
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  11) #typedef uint64_t u64;
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  12) #typedef int32_t i32;
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  13) #typedef uint32_t u32;
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  14) #typedef int16_t i16;
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  15) #typedef uint16_t u16;
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  16) #typedef int8_t i8;
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  17) #typedef uint8_t u8;
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  18) #typedef time_t timestamp;
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  19) #typedef bool boolean;
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  20) 
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  21) string : TypeAlias = str
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  22) char : TypeAlias = str
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  23) i64 : TypeAlias = ctypes.c_int64
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  24) u64 : TypeAlias = ctypes.c_uint64
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  25) i32 : TypeAlias = ctypes.c_int32
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  26) u32 : TypeAlias = ctypes.c_uint32
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  27) i16 : TypeAlias = ctypes.c_int16
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  28) u16 : TypeAlias = ctypes.c_uint16
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  29) i8 : TypeAlias = ctypes.c_int8
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  30) u8 : TypeAlias = ctypes.c_uint8
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  31) size_t : TypeAlias = ctypes.c_size_t
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  32) 
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  33) 
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  34) class chat_message:
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  35)     message_body : string
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  36)     author : string
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  37)     time : i64
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  38) 
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  39) 
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  40) def chat_message_unpack(binary_string):
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  41)     format_string_mapping = {
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  42)         'string' : 'q',
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  43)         'char' : 'B',
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  44)         'i64' : 'q',
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  45)         'ui64' : 'Q',
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  46)         'i32' : 'i',
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  47)         'ui32' : 'I',
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  48)         'i16' : 'h',
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  49)         'ui6' : 'H',
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  50)         'i8' : 'b',
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  51)         'u8' : 'B'
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  52)     }
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  53) 
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  54)     format_string = '<q'
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  55)     format_string += (format_string_mapping['i32'])
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  56)     format_string += (format_string_mapping['i32'])
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  57)     format_string += (format_string_mapping['i32'])
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  58)     format_string += (format_string_mapping['i32'])
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  59)     format_string += (format_string_mapping['i64'])
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  60) 
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  61) 
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  62)     (
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  63)         message_body_offset,
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  64)         message_body_size,
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  65)         author_offset,
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  66)         author_size,
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  67)         time,
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  68)     ) = struct.unpack(format_string, binary_string)
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  69) 
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  70)     return 0;
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  71) 
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  72) 
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  73) def main():
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  74) 
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  75)     # use method 1 (sruct library) to print a binary blob of filler
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  76)     # data for the reaction dataclass
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  77)     binary_string = struct.pack('<qiiiiqqq', 1, 100, 102, 42, 10, 1, 2, 3) #bytes('a', 'utf-8'), bytes('b', 'utf-8'), bytes('c', 'utf-8'),  )
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  78) 
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  79)     (non, off1, s1, off2, s2, time) = struct.unpack('<qiiiiqqq', binary_string)
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  80)     
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  81)     print(non)
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  82)     print(s2)
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  83)     print(time)
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  84) 
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  85)     print(binary_string)
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  86) 
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  87)     #msg = operation_msg_unpack(binary_string)
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  88) 
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  89)     ##prompt users to populate example instance of class
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  90)     #variables = (vars(operation_msg)['__annotations__'])
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  91)     #var_names = list(variables.keys())  
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  92)     #var_types = list(variables.values())  
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  93) 
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  94)     #ex_operation_msg_input_list = []
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  95) 
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  96)     #for index, name in enumerate(var_names):
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  97)         #ex_operation_msg_input_list.append(
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  98)              #int(input("Enter value for " + name + ': ')) )
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500  99) 
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500 100)     #ex_operation_msg = operation_msg(
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500 101)         #ex_operation_msg_input_list[0],
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500 102)         #ex_operation_msg_input_list[1],
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500 103)         #ex_operation_msg_input_list[2],
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500 104)     #)
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500 105) 
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500 106)     #bin_string = operation_msg_pack(ex_operation_msg)
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500 107) 
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500 108)     #print(f'binary string: {bin_string}')
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500 109) 
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500 110)     #s = socket.socket()
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500 111) 
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500 112)     ## Define the port on which you want to connect
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500 113)     #port = 60221 
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500 114) 
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500 115)     ## connect to the server on local computer
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500 116)     #s.connect(('127.0.0.1', port))
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500 117) 
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500 118)     ## send the binary string that represents the packaged message
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500 119)     #s.send(bin_string)
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500 120)     ## close the connection
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500 121)     #s.close()
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500 122) 
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500 123)     
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500 124)     
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500 125) if __name__ == '__main__':
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500 126)     main()
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500 127) 
+095a68c4 (Mikolaj Jakowski 2024-11-14 21:58:50 -0500 128) 
+
+examples/example_server.py
+
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  5) import struct
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  6) from typing import TypeAlias
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  7) import ctypes
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  9) string : TypeAlias = str
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 10) char : TypeAlias = str
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 11) i64 : TypeAlias = ctypes.c_int64
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 12) u64 : TypeAlias = ctypes.c_uint64
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 13) i32 : TypeAlias = ctypes.c_int32
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 14) u32 : TypeAlias = ctypes.c_uint32
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 15) i16 : TypeAlias = ctypes.c_int16
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 16) u16 : TypeAlias = ctypes.c_uint16
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 17) i8 : TypeAlias = ctypes.c_int8
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 18) u8 : TypeAlias = ctypes.c_uint8
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 19) size_t : TypeAlias = ctypes.c_size_t
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 20) 
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 21) class chat_message:
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 22)     message_body : string
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 23)     author : string
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 24)     time : i64
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 25) 
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 26) 
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 27) def chat_message_unpack(binary_string):
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 28)     format_string_mapping = {
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 29)         'string' : 'q',
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 30)         'char' : 'B',
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 31)         'i64' : 'q',
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 32)         'ui64' : 'Q',
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 33)         'i32' : 'i',
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 34)         'ui32' : 'I',
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 35)         'i16' : 'h',
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 36)         'ui6' : 'H',
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 37)         'i8' : 'b',
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 38)         'u8' : 'B',
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 39)         'timestamp' : i64,
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 40)     }
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 41) 
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 42)     format_string = '<q'
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 43)     format_string += (format_string_mapping['i32'])
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 44)     format_string += (format_string_mapping['i32'])
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 45)     format_string += (format_string_mapping['i32'])
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 46)     format_string += (format_string_mapping['i32'])
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 47)     format_string += (format_string_mapping['i64'])
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 48) 
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 49) 
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 50)     (
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 51)         message_body_offset,
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 52)         message_body_size,
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 53)         author_offset,
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 54)         author_size,
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 55)         time,
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 56)     ) = struct.unpack(format_string, binary_string)
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 57) 
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 58)     return 0
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 69)     #port = 60221
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 70)     port = 8080
+
+
+templates/python_server.jinja
+
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500   1) import struct
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500   2) from typing import TypeAlias
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500   3) import ctypes
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500   4) 
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500   5) string : TypeAlias = str
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500   6) char : TypeAlias = str
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500   7) i64 : TypeAlias = ctypes.c_int64
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500   8) u64 : TypeAlias = ctypes.c_uint64
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500   9) i32 : TypeAlias = ctypes.c_int32
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  10) u32 : TypeAlias = ctypes.c_uint32
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  11) i16 : TypeAlias = ctypes.c_int16
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  12) u16 : TypeAlias = ctypes.c_uint16
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  13) i8 : TypeAlias = ctypes.c_int8
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  14) u8 : TypeAlias = ctypes.c_uint8
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  15) size_t : TypeAlias = ctypes.c_size_t
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  16) 
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  17) 
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  18) {% for message in messages -%}
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  19) @dataclass
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  20) class {{ message.name }} :
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  21)   {% for field in message.fields %}
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  22)     {% if field.array %}
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  23)     {{field.name}} : list[{{ field.type_field}}] 
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  24)     {% else %}
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  25)     {% if field.name != "padding" %}
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  26)     {{ field.name }} : {{ field.type_field }}
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  27)     {% endif %}
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  28)     {% endif %}
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  29)   {% endfor %}
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  30) 
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  31) {% endfor %}
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  32) 
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  33) {% for message in messages %}
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  34) 
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  35) def {{ message.name }}_unpack(binary_string) -> {{ message.name }}:
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  36)   format_string_mapping = {
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  37)     'string' : 'q',
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  38)     'char' : 'c',
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  39)     'i64' : 'q',
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  40)     'ui64' : 'Q',
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  41)     'i32' : 'i',
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  42)     'ui32' : 'I',
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  43)     'i16' : 'h',
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  44)     'ui6' : 'H',
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  45)     'i8' : 'b',
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  46)     'u8' : 'B'
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  47)   }
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  48) 
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  49)   format_string = '<'
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  50)   {% for field in message.fields %}
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  51)   {% if field.array %}
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  52)   {{field.name}} : list[{{ field.type_field}}] 
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  53)   {% else %}
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  54)   {% if field.name != "padding" %}
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  55)   format_string += format_string_mapping['{{ field.type_field}}']
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  56)   {% endif %}
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  57)   {% endif %}
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  58)   {% endfor %}
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  59) 
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  60)   (
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  61)     {% for field in message.fields %}
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  62)     {% if field.name != "padding" %}
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  63)     {{field.name}},
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  64)     {% endif %}
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  65)     {% endfor %}
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  66)   ) = struct.unpack(format_string, binary_string) 
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  67) 
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  68)   object = {{ message.name }} (
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  69)     {% for field in message.fields %}
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  70)     {% if field.name != "padding" %}
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  71)     {{field.name}},
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  72)     {% endif %}
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  73)     {% endfor %}
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  74)   ) 
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  75) 
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  76)   return object
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  77) 
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  78) 
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  79) 
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  80) # Socket is used for networking
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  81) import socket
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  82) 
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  83) def main(): 
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  84)     #create a socket
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  85)     s = socket.socket()
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  86)     print("Socket succesfully created")
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  87) 
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  88)     #select a random port
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  89)     #port = 60221
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  90)     port = 8080
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  91) 
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  92)     # take any incoming connections from the localhost
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  93)     # in this demo we are only looking at connection between 
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  94)     # local process
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  95)     s.bind(('localhost', port))
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  96)     s.listen(5)
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  97) 
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  98)     while True:
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500  99)         # Establish connection with client.
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 100)         c, addr = s.accept()
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 101)         print ('Got connection from', addr )
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 102) 
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 103)         # receive message from client
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 104)         bin_string = c.recv(1024)
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 105) 
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 106)         print(bin_string)
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 107) 
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 108)         # Close the connection with the client
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 109)         c.close()
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 110) 
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 111) 
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 112) if __name__ == '__main__':
+d32b0a53 (Mikolaj Jakowski 2024-11-14 22:06:26 -0500 113)     main()
