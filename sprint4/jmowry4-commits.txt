@@ -1,0 +1,529 @@
+chat_server.h (jackson mowry on 11/14/2024 at 09:18): #include <stdint.h>
+chat_server.h (jackson mowry on 11/14/2024 at 09:18): #include <string.h>
+chat_server.h (jackson mowry on 11/14/2024 at 09:18): #include <stdbool.h>
+chat_server.h (jackson mowry on 11/14/2024 at 09:18): #include <time.h>
+chat_server.h (jackson mowry on 11/14/2024 at 09:18): #include <stdlib.h>
+chat_server.h (jackson mowry on 11/14/2024 at 09:18): typedef char* string;
+chat_server.h (jackson mowry on 11/14/2024 at 09:18): typedef int64_t i64;
+chat_server.h (jackson mowry on 11/14/2024 at 09:18): typedef uint64_t u64;
+chat_server.h (jackson mowry on 11/14/2024 at 09:18): typedef int32_t i32;
+chat_server.h (jackson mowry on 11/14/2024 at 09:18): typedef uint32_t u32;
+chat_server.h (jackson mowry on 11/14/2024 at 09:18): typedef int16_t i16;
+chat_server.h (jackson mowry on 11/14/2024 at 09:18): typedef uint16_t u16;
+chat_server.h (jackson mowry on 11/14/2024 at 09:18): typedef int8_t i8;
+chat_server.h (jackson mowry on 11/14/2024 at 09:18): typedef uint8_t u8;
+chat_server.h (jackson mowry on 11/14/2024 at 09:18): typedef time_t timestamp;
+chat_server.h (jackson mowry on 11/14/2024 at 09:18): typedef bool boolean;
+chat_server.h (jackson mowry on 11/14/2024 at 09:18): #define CHAT_MESSAGE_PACKED_SIZE 24
+chat_server.h (jackson mowry on 11/14/2024 at 09:18):   typedef struct chat_message {
+chat_server.h (jackson mowry on 11/14/2024 at 09:18):       char* message_body;
+chat_server.h (jackson mowry on 11/14/2024 at 09:18):       size_t message_body_count;
+chat_server.h (jackson mowry on 11/14/2024 at 09:18):       char* author;
+chat_server.h (jackson mowry on 11/14/2024 at 09:18):       size_t author_count;
+chat_server.h (jackson mowry on 11/14/2024 at 09:18):       timestamp time;
+chat_server.h (jackson mowry on 11/14/2024 at 09:18):   } chat_message;
+chat_server.h (jackson mowry on 11/14/2024 at 09:18): #define REQUEST_PACKED_SIZE 8
+chat_server.h (jackson mowry on 11/14/2024 at 09:18):   typedef struct request {
+chat_server.h (jackson mowry on 11/14/2024 at 09:18):       timestamp ignored;
+chat_server.h (jackson mowry on 11/14/2024 at 09:18):   } request;
+chat_server.h (jackson mowry on 11/14/2024 at 09:18): size_t chat_message_pack(const chat_message* struct_chat_message, u8** out);
+chat_server.h (jackson mowry on 11/14/2024 at 09:18):         char* get_chat_message_message_body(const u8* message);
+chat_server.h (jackson mowry on 11/14/2024 at 09:18):         u32 get_chat_message_message_body_length(const u8* message);
+chat_server.h (jackson mowry on 11/14/2024 at 09:18):         char* get_chat_message_author(const u8* message);
+chat_server.h (jackson mowry on 11/14/2024 at 09:18):         u32 get_chat_message_author_length(const u8* message);
+chat_server.h (jackson mowry on 11/14/2024 at 09:18):         timestamp get_chat_message_time(const u8* message);
+chat_server.h (jackson mowry on 11/14/2024 at 09:18):   chat_message chat_message_unpack(const u8* message);
+chat_server.h (jackson mowry on 11/14/2024 at 09:18): size_t request_pack(const request* struct_request, u8** out);
+chat_server.h (jackson mowry on 11/14/2024 at 09:18):         timestamp get_request_ignored(const u8* message);
+chat_server.h (jackson mowry on 11/14/2024 at 09:18):   request request_unpack(const u8* message);
+chat_server.h (jackson mowry on 11/14/2024 at 09:18):   /* Send the provided chat message */
+chat_server.h (jackson mowry on 11/14/2024 at 09:18):   size_t send_message(
+chat_server.h (jackson mowry on 11/14/2024 at 09:18):     chat_message message,
+chat_server.h (jackson mowry on 11/14/2024 at 09:18):   u8 **out
+chat_server.h (jackson mowry on 11/14/2024 at 09:18):   );
+chat_server.h (jackson mowry on 11/14/2024 at 09:18):   /* Get the latest message from the server */
+chat_server.h (jackson mowry on 11/14/2024 at 09:18):   size_t get_latest_message(
+chat_server.h (jackson mowry on 11/14/2024 at 09:18):     request request,
+chat_server.h (jackson mowry on 11/14/2024 at 09:18):   u8 **out
+chat_server.h (jackson mowry on 11/14/2024 at 09:18):   );
+chat_server.c (jackson mowry on 11/14/2024 at 09:18): #include <stdint.h>
+chat_server.c (jackson mowry on 11/14/2024 at 09:18): #include <string.h>
+chat_server.c (jackson mowry on 11/14/2024 at 09:18): #include <stdbool.h>
+chat_server.c (jackson mowry on 11/14/2024 at 09:18): #include <time.h>
+chat_server.c (jackson mowry on 11/14/2024 at 09:18): #include <stdlib.h>
+chat_server.c (jackson mowry on 11/14/2024 at 09:18): #include <arpa/inet.h>
+chat_server.c (jackson mowry on 11/14/2024 at 09:18): #include <stdio.h>
+chat_server.c (jackson mowry on 11/14/2024 at 09:18): #include <unistd.h>
+chat_server.c (jackson mowry on 11/14/2024 at 09:18): #include "chat_server.h"
+chat_server.c (jackson mowry on 11/14/2024 at 09:18): size_t chat_message_pack(const chat_message* struct_chat_message, u8** out) {
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   size_t metadata_size = sizeof(u8) * 3 + ((0 + 7) / 8) * sizeof(u8);
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   ssize_t optional_index = 0;
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):     size_t variable_space = 0;
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):       variable_space += struct_chat_message->message_body_count * sizeof(char);
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):       variable_space += struct_chat_message->author_count * sizeof(char);
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   if (!*out) {
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):     *out = calloc(1, CHAT_MESSAGE_PACKED_SIZE + metadata_size + variable_space);
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   }
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   variable_space = CHAT_MESSAGE_PACKED_SIZE + metadata_size;
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   u8* optional = *out + 3;
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   (*out)[0] = 0;
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   (*out)[1] = 0;
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):       // message_body
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):         memcpy(*out + variable_space, struct_chat_message->message_body, struct_chat_message->message_body_count * sizeof(*struct_chat_message->message_body));
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):         *(u32*)(*out + 0 + metadata_size) = variable_space;
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):         *(u32*)(*out + 0 + 4 + metadata_size) = struct_chat_message->message_body_count;
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):         variable_space += struct_chat_message->message_body_count * sizeof(*struct_chat_message->message_body);
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):       // author
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):         memcpy(*out + variable_space, struct_chat_message->author, struct_chat_message->author_count * sizeof(*struct_chat_message->author));
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):         *(u32*)(*out + 8 + metadata_size) = variable_space;
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):         *(u32*)(*out + 8 + 4 + metadata_size) = struct_chat_message->author_count;
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):         variable_space += struct_chat_message->author_count * sizeof(*struct_chat_message->author);
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):       // time
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):         memcpy(*out + 16 + metadata_size, &struct_chat_message->time, 8);
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):     return variable_space;
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   }
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):         char* get_chat_message_message_body(const u8* message) {
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):         return (char*)(message + *(u32*)(message + 0 + 3));
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):         }
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):         u32 get_chat_message_message_body_length(const u8* message) {
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):         return *(u32*)(message + 0 + 4 + 3);
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):         }
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):         char* get_chat_message_author(const u8* message) {
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):         return (char*)(message + *(u32*)(message + 8 + 3));
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):         }
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):         u32 get_chat_message_author_length(const u8* message) {
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):         return *(u32*)(message + 8 + 4 + 3);
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):         }
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):         timestamp get_chat_message_time(const u8* message) {
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):         return *(timestamp*)(message + 16 + 3);
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):         }
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   chat_message chat_message_unpack(const u8* message) {
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   return (chat_message){
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):         .message_body = get_chat_message_message_body(message),
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):           .message_body_count = get_chat_message_message_body_length(message),
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):         .author = get_chat_message_author(message),
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):           .author_count = get_chat_message_author_length(message),
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):         .time = get_chat_message_time(message),
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   };
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   }
+chat_server.c (jackson mowry on 11/14/2024 at 09:18): size_t request_pack(const request* struct_request, u8** out) {
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   size_t metadata_size = sizeof(u8) * 3 + ((0 + 7) / 8) * sizeof(u8);
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   ssize_t optional_index = 0;
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   if (!*out) {
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):     *out = calloc(1, REQUEST_PACKED_SIZE + metadata_size);
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   }
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   u8* optional = *out + 3;
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   (*out)[0] = 1;
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   (*out)[1] = 0;
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):       // ignored
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):         memcpy(*out + 0 + metadata_size, &struct_request->ignored, 8);
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):     return REQUEST_PACKED_SIZE + metadata_size;
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   }
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):         timestamp get_request_ignored(const u8* message) {
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):         return *(timestamp*)(message + 0 + 3);
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):         }
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   request request_unpack(const u8* message) {
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   return (request){
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):         .ignored = get_request_ignored(message),
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   };
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   }
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   /* Send the provided chat message */
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   size_t send_message(
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):     chat_message message,
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   u8 **out
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   ) {
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   chat_message return_val;
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   return chat_message_pack(&return_val, out);
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   }
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   /* Get the latest message from the server */
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   size_t get_latest_message(
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):     request request,
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   u8 **out
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   ) {
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   chat_message return_val;
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   return chat_message_pack(&return_val, out);
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   }
+chat_server.c (jackson mowry on 11/14/2024 at 09:18): #define PORT 8080
+chat_server.c (jackson mowry on 11/14/2024 at 09:18): #define BUFFER_SIZE 1024
+chat_server.c (jackson mowry on 11/14/2024 at 09:18): // Function to handle incoming data
+chat_server.c (jackson mowry on 11/14/2024 at 09:18): size_t handle_request(const u8 *input, u8 **output) {
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   switch (input[2]) {
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   case 0: {
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):     chat_message arg = chat_message_unpack(input);
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):       return send_message(arg, output);
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   }
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   case 1: {
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):     request arg = request_unpack(input);
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):       return get_latest_message(arg, output);
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   }
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):       default:
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):       puts("unsupported operation");
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   }
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):     return 0;
+chat_server.c (jackson mowry on 11/14/2024 at 09:18): }
+chat_server.c (jackson mowry on 11/14/2024 at 09:18): int main() {
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   int server_fd, new_socket;
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   struct sockaddr_in address;
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   int opt = 1;
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   int addrlen = sizeof(address);
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   u8 buffer[BUFFER_SIZE] = {0};
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   u8* response = NULL;
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   // Create socket file descriptor
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):     perror("socket failed");
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):     exit(EXIT_FAILURE);
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   }
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   // Set socket options
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):     perror("setsockopt");
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):     exit(EXIT_FAILURE);
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   }
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   // Define the address
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   address.sin_family = AF_INET;
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   address.sin_addr.s_addr = INADDR_ANY;
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   address.sin_port = htons(PORT);
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   // Bind the socket to the address
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):     perror("bind failed");
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):     exit(EXIT_FAILURE);
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   }
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   // Listen for incoming connections
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   if (listen(server_fd, 3) < 0) {
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):     perror("listen");
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):     exit(EXIT_FAILURE);
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   }
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   printf("Server is listening on port %d\n", PORT);
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   while (1) {
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):     // Accept a connection
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):     if ((new_socket = accept(server_fd, (struct sockaddr *)&address,
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):                              (socklen_t *)&addrlen)) < 0) {
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):       perror("accept");
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):       exit(EXIT_FAILURE);
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):     }
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):     // Read data from the client
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):     int bytes_read = read(new_socket, buffer, BUFFER_SIZE);
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):     if (bytes_read < 0) {
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):       perror("read");
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):       close(new_socket);
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):       continue;
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):     }
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):     // Null terminate the received data
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):     buffer[bytes_read] = '\0';
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):     // Handle the request
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):     size_t response_size = handle_request(buffer, &response);
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):     // Send the response back to the client
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):     send(new_socket, response, response_size, 0);
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):     // Close the socket for this client
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):     close(new_socket);
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   }
+chat_server.c (jackson mowry on 11/14/2024 at 09:18):   return 0;
+chat_server.c (jackson mowry on 11/14/2024 at 09:18): }
+chat_client.h (jackson mowry on 11/14/2024 at 09:18): #include <stdint.h>
+chat_client.h (jackson mowry on 11/14/2024 at 09:18): #include <string.h>
+chat_client.h (jackson mowry on 11/14/2024 at 09:18): #include <stdbool.h>
+chat_client.h (jackson mowry on 11/14/2024 at 09:18): #include <time.h>
+chat_client.h (jackson mowry on 11/14/2024 at 09:18): #include <stdlib.h>
+chat_client.h (jackson mowry on 11/14/2024 at 09:18): typedef char* string;
+chat_client.h (jackson mowry on 11/14/2024 at 09:18): typedef int64_t i64;
+chat_client.h (jackson mowry on 11/14/2024 at 09:18): typedef uint64_t u64;
+chat_client.h (jackson mowry on 11/14/2024 at 09:18): typedef int32_t i32;
+chat_client.h (jackson mowry on 11/14/2024 at 09:18): typedef uint32_t u32;
+chat_client.h (jackson mowry on 11/14/2024 at 09:18): typedef int16_t i16;
+chat_client.h (jackson mowry on 11/14/2024 at 09:18): typedef uint16_t u16;
+chat_client.h (jackson mowry on 11/14/2024 at 09:18): typedef int8_t i8;
+chat_client.h (jackson mowry on 11/14/2024 at 09:18): typedef uint8_t u8;
+chat_client.h (jackson mowry on 11/14/2024 at 09:18): typedef time_t timestamp;
+chat_client.h (jackson mowry on 11/14/2024 at 09:18): typedef bool boolean;
+chat_client.h (jackson mowry on 11/14/2024 at 09:18): #define CHAT_MESSAGE_PACKED_SIZE 24
+chat_client.h (jackson mowry on 11/14/2024 at 09:18):   typedef struct chat_message {
+chat_client.h (jackson mowry on 11/14/2024 at 09:18):       char* message_body;
+chat_client.h (jackson mowry on 11/14/2024 at 09:18):       size_t message_body_count;
+chat_client.h (jackson mowry on 11/14/2024 at 09:18):       char* author;
+chat_client.h (jackson mowry on 11/14/2024 at 09:18):       size_t author_count;
+chat_client.h (jackson mowry on 11/14/2024 at 09:18):       timestamp time;
+chat_client.h (jackson mowry on 11/14/2024 at 09:18):   } chat_message;
+chat_client.h (jackson mowry on 11/14/2024 at 09:18): #define REQUEST_PACKED_SIZE 8
+chat_client.h (jackson mowry on 11/14/2024 at 09:18):   typedef struct request {
+chat_client.h (jackson mowry on 11/14/2024 at 09:18):       timestamp ignored;
+chat_client.h (jackson mowry on 11/14/2024 at 09:18):   } request;
+chat_client.h (jackson mowry on 11/14/2024 at 09:18): size_t chat_message_pack(const chat_message* struct_chat_message, u8** out);
+chat_client.h (jackson mowry on 11/14/2024 at 09:18):         char* get_chat_message_message_body(const u8* message);
+chat_client.h (jackson mowry on 11/14/2024 at 09:18):         u32 get_chat_message_message_body_length(const u8* message);
+chat_client.h (jackson mowry on 11/14/2024 at 09:18):         char* get_chat_message_author(const u8* message);
+chat_client.h (jackson mowry on 11/14/2024 at 09:18):         u32 get_chat_message_author_length(const u8* message);
+chat_client.h (jackson mowry on 11/14/2024 at 09:18):         timestamp get_chat_message_time(const u8* message);
+chat_client.h (jackson mowry on 11/14/2024 at 09:18):   chat_message chat_message_unpack(const u8* message);
+chat_client.h (jackson mowry on 11/14/2024 at 09:18): size_t request_pack(const request* struct_request, u8** out);
+chat_client.h (jackson mowry on 11/14/2024 at 09:18):         timestamp get_request_ignored(const u8* message);
+chat_client.h (jackson mowry on 11/14/2024 at 09:18):   request request_unpack(const u8* message);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18): #include <stdint.h>
+chat_client.c (jackson mowry on 11/14/2024 at 09:18): #include <string.h>
+chat_client.c (jackson mowry on 11/14/2024 at 09:18): #include <stdbool.h>
+chat_client.c (jackson mowry on 11/14/2024 at 09:18): #include <time.h>
+chat_client.c (jackson mowry on 11/14/2024 at 09:18): #include <stdlib.h>
+chat_client.c (jackson mowry on 11/14/2024 at 09:18): #include <stdio.h>
+chat_client.c (jackson mowry on 11/14/2024 at 09:18): #include <unistd.h>
+chat_client.c (jackson mowry on 11/14/2024 at 09:18): #include <stdio.h>
+chat_client.c (jackson mowry on 11/14/2024 at 09:18): #include <stdlib.h>
+chat_client.c (jackson mowry on 11/14/2024 at 09:18): #include <string.h>
+chat_client.c (jackson mowry on 11/14/2024 at 09:18): #include <stdint.h>
+chat_client.c (jackson mowry on 11/14/2024 at 09:18): #include <unistd.h>
+chat_client.c (jackson mowry on 11/14/2024 at 09:18): #include <arpa/inet.h>
+chat_client.c (jackson mowry on 11/14/2024 at 09:18): #include "chat_client.h"
+chat_client.c (jackson mowry on 11/14/2024 at 09:18): #define SERVER_IP "127.0.0.1" // Localhost
+chat_client.c (jackson mowry on 11/14/2024 at 09:18): #define SERVER_PORT 8080       // Port number to connect to
+chat_client.c (jackson mowry on 11/14/2024 at 09:18): #define BUFFER_SIZE 256        // Size of send and receive buffers
+chat_client.c (jackson mowry on 11/14/2024 at 09:18): size_t chat_message_pack(const chat_message* struct_chat_message, u8** out) {
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):   size_t metadata_size = sizeof(u8) * 3 + ((0 + 7) / 8) * sizeof(u8);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):   ssize_t optional_index = 0;
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     size_t variable_space = 0;
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):       variable_space += struct_chat_message->message_body_count * sizeof(char);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):       variable_space += struct_chat_message->author_count * sizeof(char);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):   if (!*out) {
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     *out = calloc(1, CHAT_MESSAGE_PACKED_SIZE + metadata_size + variable_space);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):   }
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):   variable_space = CHAT_MESSAGE_PACKED_SIZE + metadata_size;
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):   u8* optional = *out + 3;
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):   (*out)[0] = 0;
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):   (*out)[1] = 0;
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):       // message_body
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         memcpy(*out + variable_space, struct_chat_message->message_body, struct_chat_message->message_body_count * sizeof(*struct_chat_message->message_body));
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         *(u32*)(*out + 0 + metadata_size) = variable_space;
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         *(u32*)(*out + 0 + 4 + metadata_size) = struct_chat_message->message_body_count;
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         variable_space += struct_chat_message->message_body_count * sizeof(*struct_chat_message->message_body);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):       // author
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         memcpy(*out + variable_space, struct_chat_message->author, struct_chat_message->author_count * sizeof(*struct_chat_message->author));
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         *(u32*)(*out + 8 + metadata_size) = variable_space;
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         *(u32*)(*out + 8 + 4 + metadata_size) = struct_chat_message->author_count;
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         variable_space += struct_chat_message->author_count * sizeof(*struct_chat_message->author);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):       // time
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         memcpy(*out + 16 + metadata_size, &struct_chat_message->time, 8);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     return variable_space;
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):   }
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         char* get_chat_message_message_body(const u8* message) {
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         return (char*)(message + *(u32*)(message + 0 + 3));
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         }
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         u32 get_chat_message_message_body_length(const u8* message) {
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         return *(u32*)(message + 0 + 4 + 3);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         }
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         char* get_chat_message_author(const u8* message) {
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         return (char*)(message + *(u32*)(message + 8 + 3));
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         }
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         u32 get_chat_message_author_length(const u8* message) {
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         return *(u32*)(message + 8 + 4 + 3);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         }
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         timestamp get_chat_message_time(const u8* message) {
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         return *(timestamp*)(message + 16 + 3);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         }
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):   chat_message chat_message_unpack(const u8* message) {
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):   return (chat_message){
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         .message_body = get_chat_message_message_body(message),
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):           .message_body_count = get_chat_message_message_body_length(message),
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         .author = get_chat_message_author(message),
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):           .author_count = get_chat_message_author_length(message),
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         .time = get_chat_message_time(message),
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):   };
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):   }
+chat_client.c (jackson mowry on 11/14/2024 at 09:18): size_t request_pack(const request* struct_request, u8** out) {
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):   size_t metadata_size = sizeof(u8) * 3 + ((0 + 7) / 8) * sizeof(u8);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):   ssize_t optional_index = 0;
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):   if (!*out) {
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     *out = calloc(1, REQUEST_PACKED_SIZE + metadata_size);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):   }
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):   u8* optional = *out + 3;
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):   (*out)[0] = 1;
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):   (*out)[1] = 0;
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):       // ignored
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         memcpy(*out + 0 + metadata_size, &struct_request->ignored, 8);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     return REQUEST_PACKED_SIZE + metadata_size;
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):   }
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         timestamp get_request_ignored(const u8* message) {
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         return *(timestamp*)(message + 0 + 3);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         }
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):   request request_unpack(const u8* message) {
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):   return (request){
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         .ignored = get_request_ignored(message),
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):   };
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):   }
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):   /* Send the provided chat message */
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):   chat_message send_message(
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):       chat_message message
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):   ) {
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     int sock;
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     struct sockaddr_in server_addr;
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     uint8_t* send_buffer = NULL;
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     size_t send_buffer_size;
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     uint8_t recv_buffer[BUFFER_SIZE];
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     ssize_t bytes_sent, bytes_received;
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     send_buffer_size = chat_message_pack(&message, &send_buffer);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):   send_buffer[2] = 0;
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     // Step 1: Create a socket
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     sock = socket(AF_INET, SOCK_STREAM, 0);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     if (sock < 0) {
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         perror("Socket creation failed"); // Print error message
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         exit(1);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     }
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     printf("Socket created successfully.\n");
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     // Step 2: Prepare the server address structure
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     memset(&server_addr, 0, sizeof(server_addr)); // Clear the structure
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     server_addr.sin_family = AF_INET; // IPv4
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     server_addr.sin_port = htons(SERVER_PORT); // Convert port to network byte order
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     // Convert IPv4 address from text to binary form
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     if (inet_pton(AF_INET, SERVER_IP, &server_addr.sin_addr) <= 0) {
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         perror("Invalid address / Address not supported");
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         close(sock); // Close the socket before exiting
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         exit(1);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     }
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     printf("Server address set to %s:%d.\n", SERVER_IP, SERVER_PORT);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     // Step 3: Connect to the server
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     if (connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         perror("Connection failed"); // Print error message
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         close(sock); // Close the socket
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         exit(1);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     }
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     printf("Connected to the server at %s:%d.\n", SERVER_IP, SERVER_PORT);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     // Step 4: Send data to the server
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     printf("Sending data: ");
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     for (size_t i = 0; i < send_buffer_size; i++) {
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         printf("%02x ", send_buffer[i]); // Print data being sent
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     }
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     printf("\n");
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     bytes_sent = send(sock, send_buffer, sizeof(send_buffer), 0);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     if (bytes_sent < 0) {
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         perror("Send failed"); // Print error message
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         close(sock); // Close the socket
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         exit(1);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     }
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     printf("Sent %zd bytes to the server.\n", bytes_sent);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     // Step 5: Receive response from the server
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     bytes_received = recv(sock, recv_buffer, sizeof(recv_buffer), 0);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     if (bytes_received < 0) {
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         perror("Receive failed"); // Print error message
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         close(sock); // Close the socket
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         exit(1);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     }
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     // Step 6: Print the received data
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     printf("Received %zd bytes from the server: ", bytes_received);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     for (ssize_t i = 0; i < bytes_received; i++) {
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         printf("%02x ", recv_buffer[i]); // Print each byte of received data
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     }
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     printf("\n");
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     // Step 7: Close the socket
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     close(sock);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     printf("Socket closed. Exiting program.\n");
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     chat_message ret_val = chat_message_unpack(recv_buffer);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     return ret_val;
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):   }
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):   /* Get the latest message from the server */
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):   chat_message get_latest_message(
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):       request request
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):   ) {
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     int sock;
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     struct sockaddr_in server_addr;
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     uint8_t* send_buffer = NULL;
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     size_t send_buffer_size;
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     uint8_t recv_buffer[BUFFER_SIZE];
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     ssize_t bytes_sent, bytes_received;
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     send_buffer_size = request_pack(&request, &send_buffer);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):   send_buffer[2] = 1;
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     // Step 1: Create a socket
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     sock = socket(AF_INET, SOCK_STREAM, 0);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     if (sock < 0) {
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         perror("Socket creation failed"); // Print error message
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         exit(1);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     }
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     printf("Socket created successfully.\n");
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     // Step 2: Prepare the server address structure
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     memset(&server_addr, 0, sizeof(server_addr)); // Clear the structure
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     server_addr.sin_family = AF_INET; // IPv4
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     server_addr.sin_port = htons(SERVER_PORT); // Convert port to network byte order
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     // Convert IPv4 address from text to binary form
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     if (inet_pton(AF_INET, SERVER_IP, &server_addr.sin_addr) <= 0) {
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         perror("Invalid address / Address not supported");
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         close(sock); // Close the socket before exiting
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         exit(1);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     }
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     printf("Server address set to %s:%d.\n", SERVER_IP, SERVER_PORT);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     // Step 3: Connect to the server
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     if (connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         perror("Connection failed"); // Print error message
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         close(sock); // Close the socket
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         exit(1);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     }
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     printf("Connected to the server at %s:%d.\n", SERVER_IP, SERVER_PORT);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     // Step 4: Send data to the server
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     printf("Sending data: ");
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     for (size_t i = 0; i < send_buffer_size; i++) {
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         printf("%02x ", send_buffer[i]); // Print data being sent
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     }
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     printf("\n");
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     bytes_sent = send(sock, send_buffer, sizeof(send_buffer), 0);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     if (bytes_sent < 0) {
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         perror("Send failed"); // Print error message
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         close(sock); // Close the socket
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         exit(1);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     }
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     printf("Sent %zd bytes to the server.\n", bytes_sent);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     // Step 5: Receive response from the server
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     bytes_received = recv(sock, recv_buffer, sizeof(recv_buffer), 0);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     if (bytes_received < 0) {
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         perror("Receive failed"); // Print error message
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         close(sock); // Close the socket
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         exit(1);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     }
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     // Step 6: Print the received data
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     printf("Received %zd bytes from the server: ", bytes_received);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     for (ssize_t i = 0; i < bytes_received; i++) {
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):         printf("%02x ", recv_buffer[i]); // Print each byte of received data
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     }
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     printf("\n");
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     // Step 7: Close the socket
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     close(sock);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     printf("Socket closed. Exiting program.\n");
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     chat_message ret_val = chat_message_unpack(recv_buffer);
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     return ret_val;
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):   }
+chat_client.c (jackson mowry on 11/14/2024 at 09:18): int main() {
+chat_client.c (jackson mowry on 11/14/2024 at 09:18):     return 0; // Exit successfully
+chat_client.c (jackson mowry on 11/14/2024 at 09:18): }
+final_demo.schemafile (jackson mowry on 11/14/2024 at 08:31): <?xml version="1.0" encoding="UTF-8"?>
+final_demo.schemafile (jackson mowry on 11/14/2024 at 08:31): <schema version="1.0.0">
+final_demo.schemafile (jackson mowry on 11/14/2024 at 08:31):   <messages>
+final_demo.schemafile (jackson mowry on 11/14/2024 at 08:31):     <message name="chat_message">
+final_demo.schemafile (jackson mowry on 11/14/2024 at 08:31):       <fields>
+final_demo.schemafile (jackson mowry on 11/14/2024 at 08:31):         <field type="char[]" required="true">message_body</field>
+final_demo.schemafile (jackson mowry on 11/14/2024 at 08:31):         <field type="char[]" required="true">author</field>
+final_demo.schemafile (jackson mowry on 11/14/2024 at 08:31):         <field type="timestamp" required="true">time</field>
+final_demo.schemafile (jackson mowry on 11/14/2024 at 08:31):       </fields>
+final_demo.schemafile (jackson mowry on 11/14/2024 at 08:31):     </message>
+final_demo.schemafile (jackson mowry on 11/14/2024 at 09:18):     <message name="request">
+final_demo.schemafile (jackson mowry on 11/14/2024 at 09:18):       <fields>
+final_demo.schemafile (jackson mowry on 11/14/2024 at 09:18):         <field type="timestamp" required="true">ignored</field>
+final_demo.schemafile (jackson mowry on 11/14/2024 at 09:18):       </fields>
+final_demo.schemafile (jackson mowry on 11/14/2024 at 09:18):     </message>
+final_demo.schemafile (jackson mowry on 11/14/2024 at 08:31):   </messages>
+final_demo.schemafile (jackson mowry on 11/14/2024 at 08:31):   <procedures>
+final_demo.schemafile (jackson mowry on 11/14/2024 at 08:31):     <procedure name = "send_message">
+final_demo.schemafile (jackson mowry on 11/14/2024 at 08:31):       <description>
+final_demo.schemafile (jackson mowry on 11/14/2024 at 08:31):         Send the provided chat message
+final_demo.schemafile (jackson mowry on 11/14/2024 at 08:31):       </description>
+final_demo.schemafile (jackson mowry on 11/14/2024 at 08:31):       <parameters>
+final_demo.schemafile (jackson mowry on 11/14/2024 at 08:31):         <field type="chat_message" required="true">message</field>
+final_demo.schemafile (jackson mowry on 11/14/2024 at 08:31):       </parameters>
+final_demo.schemafile (jackson mowry on 11/14/2024 at 08:31):       <returns>
+final_demo.schemafile (jackson mowry on 11/14/2024 at 08:31):         <field type="chat_message">result</field>
+final_demo.schemafile (jackson mowry on 11/14/2024 at 08:31):       </returns>
+final_demo.schemafile (jackson mowry on 11/14/2024 at 08:31):     </procedure>
+final_demo.schemafile (jackson mowry on 11/14/2024 at 08:31):     <procedure name = "get_latest_message">
+final_demo.schemafile (jackson mowry on 11/14/2024 at 08:31):       <description>
+final_demo.schemafile (jackson mowry on 11/14/2024 at 08:31):         Get the latest message from the server
+final_demo.schemafile (jackson mowry on 11/14/2024 at 08:31):       </description>
+final_demo.schemafile (jackson mowry on 11/14/2024 at 08:31):       <parameters>
+final_demo.schemafile (jackson mowry on 11/14/2024 at 09:18):         <field type="request" required="true">request</field>
+final_demo.schemafile (jackson mowry on 11/14/2024 at 08:31):       </parameters>
+final_demo.schemafile (jackson mowry on 11/14/2024 at 08:31):       <returns>
+final_demo.schemafile (jackson mowry on 11/14/2024 at 08:31):         <field type="chat_message">result</field>
+final_demo.schemafile (jackson mowry on 11/14/2024 at 08:31):       </returns>
+final_demo.schemafile (jackson mowry on 11/14/2024 at 08:31):     </procedure>
+final_demo.schemafile (jackson mowry on 11/14/2024 at 08:31):   </procedures>
+final_demo.schemafile (jackson mowry on 11/14/2024 at 08:31): </schema>
