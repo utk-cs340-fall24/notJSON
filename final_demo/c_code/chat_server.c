@@ -1,127 +1,136 @@
-#include <stdint.h>
-#include <string.h>
-#include <stdbool.h>
-#include <time.h>
-#include <stdlib.h>
 #include <arpa/inet.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "chat_server.h"
 
-size_t chat_message_pack(const chat_message* struct_chat_message, u8** out) {
+chat_message last_message;
+
+size_t chat_message_pack(const chat_message *struct_chat_message, u8 **out) {
   size_t metadata_size = sizeof(u8) * 3 + ((0 + 7) / 8) * sizeof(u8);
   ssize_t optional_index = 0;
 
+  size_t variable_space = 0;
 
-    size_t variable_space = 0;
-
-
-      variable_space += struct_chat_message->message_body_count * sizeof(char);
-      variable_space += struct_chat_message->author_count * sizeof(char);
+  variable_space += struct_chat_message->message_body_count * sizeof(char);
+  variable_space += struct_chat_message->author_count * sizeof(char);
   if (!*out) {
     *out = calloc(1, CHAT_MESSAGE_PACKED_SIZE + metadata_size + variable_space);
   }
 
   variable_space = CHAT_MESSAGE_PACKED_SIZE + metadata_size;
-  u8* optional = *out + 3;
+  u8 *optional = *out + 3;
   (*out)[0] = 0;
   (*out)[1] = 0;
 
-      // message_body
-        memcpy(*out + variable_space, struct_chat_message->message_body, struct_chat_message->message_body_count * sizeof(*struct_chat_message->message_body));
-        *(u32*)(*out + 0 + metadata_size) = variable_space;
-        *(u32*)(*out + 0 + 4 + metadata_size) = struct_chat_message->message_body_count;
-        variable_space += struct_chat_message->message_body_count * sizeof(*struct_chat_message->message_body);
-      // author
-        memcpy(*out + variable_space, struct_chat_message->author, struct_chat_message->author_count * sizeof(*struct_chat_message->author));
-        *(u32*)(*out + 8 + metadata_size) = variable_space;
-        *(u32*)(*out + 8 + 4 + metadata_size) = struct_chat_message->author_count;
-        variable_space += struct_chat_message->author_count * sizeof(*struct_chat_message->author);
-      // time
-        memcpy(*out + 16 + metadata_size, &struct_chat_message->time, 8);
+  // message_body
+  memcpy(*out + variable_space, struct_chat_message->message_body,
+         struct_chat_message->message_body_count *
+             sizeof(*struct_chat_message->message_body));
+  *(u32 *)(*out + 0 + metadata_size) = variable_space;
+  *(u32 *)(*out + 0 + 4 + metadata_size) =
+      struct_chat_message->message_body_count;
+  variable_space += struct_chat_message->message_body_count *
+                    sizeof(*struct_chat_message->message_body);
+  // author
+  memcpy(*out + variable_space, struct_chat_message->author,
+         struct_chat_message->author_count *
+             sizeof(*struct_chat_message->author));
+  *(u32 *)(*out + 8 + metadata_size) = variable_space;
+  *(u32 *)(*out + 8 + 4 + metadata_size) = struct_chat_message->author_count;
+  variable_space +=
+      struct_chat_message->author_count * sizeof(*struct_chat_message->author);
+  // time
+  memcpy(*out + 16 + metadata_size, &struct_chat_message->time, 8);
 
-    return variable_space;
-  }
+  return variable_space;
+}
 
-        char* get_chat_message_message_body(const u8* message) {
-        return (char*)(message + *(u32*)(message + 0 + 3));
-        }
-        u32 get_chat_message_message_body_length(const u8* message) {
-        return *(u32*)(message + 0 + 4 + 3);
-        }
+char *get_chat_message_message_body(const u8 *message) {
+  return (char *)(message + *(u32 *)(message + 0 + 3));
+}
+u32 get_chat_message_message_body_length(const u8 *message) {
+  return *(u32 *)(message + 0 + 4 + 3);
+}
 
-        char* get_chat_message_author(const u8* message) {
-        return (char*)(message + *(u32*)(message + 8 + 3));
-        }
-        u32 get_chat_message_author_length(const u8* message) {
-        return *(u32*)(message + 8 + 4 + 3);
-        }
+char *get_chat_message_author(const u8 *message) {
+  return (char *)(message + *(u32 *)(message + 8 + 3));
+}
+u32 get_chat_message_author_length(const u8 *message) {
+  return *(u32 *)(message + 8 + 4 + 3);
+}
 
-        timestamp get_chat_message_time(const u8* message) {
-        return *(timestamp*)(message + 16 + 3);
-        }
+timestamp get_chat_message_time(const u8 *message) {
+  return *(timestamp *)(message + 16 + 3);
+}
 
-
-  chat_message chat_message_unpack(const u8* message) {
+chat_message chat_message_unpack(const u8 *message) {
   return (chat_message){
-        .message_body = get_chat_message_message_body(message),
-          .message_body_count = get_chat_message_message_body_length(message),
-        .author = get_chat_message_author(message),
-          .author_count = get_chat_message_author_length(message),
-        .time = get_chat_message_time(message),
+      .message_body = get_chat_message_message_body(message),
+      .message_body_count = get_chat_message_message_body_length(message),
+      .author = get_chat_message_author(message),
+      .author_count = get_chat_message_author_length(message),
+      .time = get_chat_message_time(message),
   };
-  }
-size_t request_pack(const request* struct_request, u8** out) {
+}
+size_t request_pack(const request *struct_request, u8 **out) {
   size_t metadata_size = sizeof(u8) * 3 + ((0 + 7) / 8) * sizeof(u8);
   ssize_t optional_index = 0;
-
-
-
 
   if (!*out) {
     *out = calloc(1, REQUEST_PACKED_SIZE + metadata_size);
   }
 
-  u8* optional = *out + 3;
+  u8 *optional = *out + 3;
   (*out)[0] = 1;
   (*out)[1] = 0;
 
-      // ignored
-        memcpy(*out + 0 + metadata_size, &struct_request->ignored, 8);
+  // ignored
+  memcpy(*out + 0 + metadata_size, &struct_request->ignored, 8);
 
-    return REQUEST_PACKED_SIZE + metadata_size;
-  }
+  return REQUEST_PACKED_SIZE + metadata_size;
+}
 
-        timestamp get_request_ignored(const u8* message) {
-        return *(timestamp*)(message + 0 + 3);
-        }
+timestamp get_request_ignored(const u8 *message) {
+  return *(timestamp *)(message + 0 + 3);
+}
 
-
-  request request_unpack(const u8* message) {
+request request_unpack(const u8 *message) {
   return (request){
-        .ignored = get_request_ignored(message),
+      .ignored = get_request_ignored(message),
   };
-  }
+}
 
-  /* Send the provided chat message */
-  size_t send_message(
-    chat_message message,
-  u8 **out
-  ) {
+/* Send the provided chat message */
+size_t send_message(chat_message message, u8 **out) {
   chat_message return_val;
 
-  return chat_message_pack(&return_val, out);
+  char time[256] = {0};
+  if (strftime(time, 255, "%I:%M", localtime(&message.time)) == 0) {
+    perror("strftime");
   }
-  /* Get the latest message from the server */
-  size_t get_latest_message(
-    request request,
-  u8 **out
-  ) {
-  chat_message return_val;
+
+  printf("%.*s <%s>: %.*s\n", (int)message.author_count, message.author, time,
+         (int)message.message_body_count, message.message_body);
+
+  last_message = message;
+  return_val = message;
 
   return chat_message_pack(&return_val, out);
-  }
+}
+/* Get the latest message from the server */
+size_t get_latest_message(request request, u8 **out) {
+  chat_message return_val;
+
+  return_val = last_message;
+
+  return chat_message_pack(&return_val, out);
+}
 
 #define PORT 8080
 #define BUFFER_SIZE 1024
@@ -131,17 +140,17 @@ size_t handle_request(const u8 *input, u8 **output) {
   switch (input[2]) {
   case 0: {
     chat_message arg = chat_message_unpack(input);
-      return send_message(arg, output);
+    return send_message(arg, output);
   }
   case 1: {
     request arg = request_unpack(input);
-      return get_latest_message(arg, output);
+    return get_latest_message(arg, output);
   }
-      default:
-      puts("unsupported operation");
+  default:
+    puts("unsupported operation");
   }
 
-    return 0;
+  return 0;
 }
 
 int main() {
@@ -150,7 +159,7 @@ int main() {
   int opt = 1;
   int addrlen = sizeof(address);
   u8 buffer[BUFFER_SIZE] = {0};
-  u8* response = NULL;
+  u8 *response = NULL;
 
   // Create socket file descriptor
   if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
