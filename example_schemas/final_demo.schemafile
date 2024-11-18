@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema version="1.0.0">
+  <messages>
+    <message name="chat_message">
+      <fields>
+        <field type="char[]" required="true">message_body</field>
+        <field type="char[]" required="true">author</field>
+        <field type="timestamp" required="true">time</field>
+      </fields>
+    </message>
+    <message name="request">
+      <fields>
+        <field type="timestamp" required="true">ignored</field>
+      </fields>
+    </message>
+  </messages>
+  <procedures>
+    <procedure name = "send_message">
+      <description>
+        Send the provided chat message
+      </description>
+      <parameters>
+        <field type="chat_message" required="true">message</field>
+      </parameters>
+      <returns>
+        <field type="chat_message">result</field>
+      </returns>
+    </procedure>
+    <procedure name = "get_latest_message">
+      <description>
+        Get the latest message from the server
+      </description>
+      <parameters>
+        <field type="request" required="true">request</field>
+      </parameters>
+      <returns>
+        <field type="chat_message">result</field>
+      </returns>
+    </procedure>
+  </procedures>
+</schema>
