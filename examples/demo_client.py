@@ -7,6 +7,7 @@ import pprint
 import socket
 import os
 import datetime
+import time
 
 #typedef char * string;
 #typedef int64_t i64;
@@ -36,7 +37,8 @@ u16 : TypeAlias = ctypes.c_uint16
 i8 : TypeAlias = ctypes.c_int8
 u8 : TypeAlias = ctypes.c_uint8
 size_t : TypeAlias = ctypes.c_size_t
-timestamp : TypeAlias = ctypes.c_uint64
+#timestamp : TypeAlias = ctypes.c_uint64
+timestamp : TypeAlias = ctypes.c_time_t
 
 chat_message_packed_size = 27
 
@@ -158,12 +160,13 @@ def main():
 
     author_string = os.getenv('USER')
     author_size = len(author_string)
-    author_offset = chat_message_packed_size
+    author_offset = message_body_offset + message_body_size
     author = bytes(author_string, 'utf8')
     print(author)
 
     timstmp = int(datetime.datetime.utcnow().timestamp())
-    timstmp = 10
+    #timstmp = 10
+    timstmp = int(time.time())
 
     #cm = chat_message()
     #cm.message_body = b'hello'
@@ -194,7 +197,7 @@ def main():
     s = socket.socket()
 
     # Define the port on which you want to connect
-    port = 8080 
+    port = 8080
 
     # connect to the server on local computer
     s.connect(('127.0.0.1', port))
