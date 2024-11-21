@@ -186,6 +186,7 @@ def main():
     cm.author_size = author_size
     #cm.time = time.time()
     cm.time = timstmp
+    cm.time = 4
 
     #print(type(cm.author))
 
