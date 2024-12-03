@@ -1,56 +1,118 @@
 const net = require('net');
 
-const HOST = 'localhost';
-const PORT = 8080;
+const SERVER_IP = "127.0.0.1"; // Localhost
+const SERVER_PORT = 8080;      // Port number to connect to
 
-const CLIENT_STATE = {
-    packet: {{ packet_data | default('default_value') | tojson }},
-    field_type: 'integer',
-    output: '',
-    data: {
-        {% for field in fields %}
-            {{ field.name }}: {{ field.initial_value }},
-        {% endfor %}
-    }
-};
+{% for message in messages -%}
+function {{ message.name }}Pack(struct{{ message.name }}) {
+    const metadataSize = 3 + Math.ceil({{ message.metadata.optionals_count }} / 8);
+    let optionalIndex = 0;
+    let variableSpace = 0; // Initialize variable space for arrays
 
-// Preprocess data to fit field types
-function preprocessData() {
-    {% for field in fields %}
-        if (CLIENT_STATE.data['{{ field.name }}'] === undefined) {
-            CLIENT_STATE.data['{{ field.name }}'] = {{ field.default_value }};
-        }
+    {% set hasArrayFields = namespace(value=False) %}
+    {% for field in message.fields %}
+        {% if field.array %}
+            {% set hasArrayFields.value = True %}
+        {% endif %}
     {% endfor %}
+
+    {% if hasArrayFields.value %}
+        // Handle array fields dynamically
+        {% for field in message.fields %}
+            {% if field.array %}
+                if (struct{{ message.name }}.{{ field.name }}_present) {
+                    if (struct{{ message.name }}.{{ field.name }}) {
+                        variableSpace += struct{{ message.name }}.{{ field.name }}.length;
+                    } else {
+                        console.warn("Field {{ field.name }} is missing or undefined");
+                    }
+                }
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+
+    // Define the buffer size with potential variable space for arrays
+    const bufferSize = {{ message.name.upper() }}_PACKED_SIZE + metadataSize + (variableSpace || 0);
+    const outBuffer = Buffer.alloc(bufferSize);
+
+    outBuffer[0] = {{ message.metadata.message_identifier }};
+    outBuffer[1] = {{ message.metadata.version_number }};
+    let currentOffset = 0;
+
+    let optionalByte = Buffer.alloc(Math.ceil({{ message.metadata.optionals_count }} / 8));
+    outBuffer.set(optionalByte, 3);
+    currentOffset += metadataSize;
+
+    {% for field in message.fields %}
+        {% if not field.padding %}
+            // {{ field.name }}
+            {% if not field.required %}
+                if (struct{{ message.name }}.{{ field.name }}_present) {
+                    optionalByte[optionalIndex >> 3] |= (1 << (optionalIndex & 7));
+                }
+            {% endif %}
+            {% if field.array %}
+                if (struct{{ message.name }}.{{ field.name }}) {
+                    let arrayData = Buffer.from(struct{{ message.name }}.{{ field.name }});
+                    arrayData.copy(outBuffer, currentOffset);
+                    currentOffset += arrayData.length;
+                } else {
+                    console.warn("Field {{ field.name }} is missing or undefined");
+                }
+            {% else %}
+                if (struct{{ message.name }}.{{ field.name }}) {
+                    outBuffer.write(struct{{ message.name }}.{{ field.name }}, currentOffset);
+                    currentOffset += Buffer.byteLength(struct{{ message.name }}.{{ field.name }});
+                } else {
+                    console.warn("Field {{ field.name }} is missing or undefined");
+                }
+            {% endif %}
+            {% if not field.required %}
+                } else {
+                    optionalByte[optionalIndex >> 3] &= ~(1 << (optionalIndex & 7));
+                }
+                optionalIndex++;
+            {% endif %}
+        {% endif %}
+    {% endfor %}
+
+    return outBuffer;
 }
+{% endfor %}
 
-// Send the packet with the data to the server
-function sendPacketToServer() {
-    const packet = {
-        packet_type: CLIENT_STATE.packet,
-        fields: CLIENT_STATE.data
-    };
+{% for procedure in procedures %}
+function {{ procedure.name }}({{ procedure.parameters | map(attribute='name') | join(', ') }}) {
+    return new Promise((resolve, reject) => {
+        const client = new net.Socket();
+        const sendBuffer = {{ procedure.parameters[0].type_field }}Pack({{ procedure.parameters[0].name }});
 
-    const client = new net.Socket();
-    client.connect(PORT, HOST, () => {
-        console.log('Connected to server');
-        client.write(JSON.stringify(packet));  // Send data to server
-    });
+        client.connect(SERVER_PORT, SERVER_IP, () => {
+            console.log(`Connected to server at ${SERVER_IP}:${SERVER_PORT}`);
+            client.write(sendBuffer);
+        });
 
-    client.on('data', (data) => {
-        console.log('Received:', data.toString());
-        client.destroy(); // Close the connection
-    });
+        client.on('data', (data) => {
+            console.log(`Received ${data.length} bytes from server`);
+            client.destroy(); // Close the connection
 
-    client.on('error', (err) => {
-        console.error('Error sending packet:', err);
+            const returnValue = {{ procedure.return_values[0].type_field }}Unpack(data);
+            resolve(returnValue);
+        });
+
+        client.on('error', (err) => {
+            console.error('Error:', err.message);
+            reject(err);
+        });
     });
 }
+{% endfor %}
 
-// Main function to execute the client-side logic
-function main() {
-    preprocessData();
-    sendPacketToServer();
-}
-
-// Execute the main function
-main();
+// Example usage
+(async () => {
+    try {
+        const result = await {{ procedures[0].name }}({/* populate with procedure data */});
+        console.log('Result:', result);
+    } catch (error) {
+        console.error('Error:', error);
+    }
+})();
