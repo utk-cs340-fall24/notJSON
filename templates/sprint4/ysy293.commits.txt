@@ -1,0 +1,99 @@
+js_server.jinja
+
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500  1) const net = require('net');
+^9877def (Jason West 2024-10-31 09:32:13 -0400  2)
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500  3) const PORT = {{ port | default('8080') }};
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500  4) const HOST = '{{ host | default('localhost') }}';
+^9877def (Jason West 2024-10-31 09:32:13 -0400  5)
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500  6) // Utility function to handle messages
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500  7) function processMessage(data) {
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500  8)     // Simulate processing the data
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500  9)     console.log('Received message:', data);
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 10)     // Add custom processing or message handling logic here
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 11)     return `Processed: ${data}`;
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 12) }
+^9877def (Jason West 2024-10-31 09:32:13 -0400 13)
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 14) // Create the server
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 15) const server = net.createServer((socket) => {
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 16)     console.log('Client connected:', socket.remoteAddress, socket.remotePort);
+^9877def (Jason West 2024-10-31 09:32:13 -0400 17)
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 18)     // Handle incoming data from the client
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 19)     socket.on('data', (data) => {
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 20)         const response = processMessage(data.toString());
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 21)         socket.write(response);  // Send response back to the client
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 22)     });
+^9877def (Jason West 2024-10-31 09:32:13 -0400 23)
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 24)     // Handle the end of connection
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 25)     socket.on('end', () => {
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 26)         console.log('Client disconnected');
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 27)     });
+^9877def (Jason West 2024-10-31 09:32:13 -0400 28)
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 29)     // Handle errors
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 30)     socket.on('error', (err) => {
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 31)         console.error('Socket error:', err);
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 32)     });
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 33) });
+^9877def (Jason West 2024-10-31 09:32:13 -0400 34)
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 35) // Start listening
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 36) server.listen(PORT, HOST, () => {
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 37)     console.log(`Server listening on ${HOST}:${PORT}`);
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 38) });
+
+js_client.jinja
+
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500  1) const net = require('net');
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500  2)
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500  3) const HOST = 'localhost';
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500  4) const PORT = 8080;
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500  5)
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500  6) const CLIENT_STATE = {
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500  7)     packet: {{ packet_data | default('default_value') | tojson }},
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500  8)     field_type: 'integer',
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500  9)     output: '',
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 10)     data: {
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 11)         {% for field in fields %}
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 12)             {{ field.name }}: {{ field.initial_value }},
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 13)         {% endfor %}
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 14)     }
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 15) };
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 16)
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 17) // Preprocess data to fit field types
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 18) function preprocessData() {
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 19)     {% for field in fields %}
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 20)         if (CLIENT_STATE.data['{{ field.name }}'] === undefined) {
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 21)             CLIENT_STATE.data['{{ field.name }}'] = {{ field.default_value }};
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 22)         }
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 23)     {% endfor %}
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 24) }
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 25)
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 26) // Send the packet with the data to the server
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 27) function sendPacketToServer() {
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 28)     const packet = {
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 29)         packet_type: CLIENT_STATE.packet,
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 30)         fields: CLIENT_STATE.data
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 31)     };
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 32)
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 33)     const client = new net.Socket();
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 34)     client.connect(PORT, HOST, () => {
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 35)         console.log('Connected to server');
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 36)         client.write(JSON.stringify(packet));  // Send data to server
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 37)     });
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 38)
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 39)     client.on('data', (data) => {
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 40)         console.log('Received:', data.toString());
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 41)         client.destroy(); // Close the connection
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 42)     });
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 43)
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 44)     client.on('error', (err) => {
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 45)         console.error('Error sending packet:', err);
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 46)     });
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 47) }
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 48)
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 49) // Main function to execute the client-side logic
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 50) function main() {
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 51)     preprocessData();
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 52)     sendPacketToServer();
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 53) }
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 54)
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 55) // Execute the main function
+247df7d9 (Jason West 2024-11-14 11:05:27 -0500 56) main();
