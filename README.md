@@ -1,5 +1,14 @@
 # notJSON
+![Image](./logo.png)
 A tool to generate encoding/decoding modules for transmitting binary messages.
+
+## Authors
+- Jackson Mowry jacksonmowry
+- Mikolaj Jakowski MikJak75
+- Jason West jasonwest
+
+## Description
+notJSON is a tool to build efficient and type safe clients/servers for performing data transfer and function calls between the two. The code is generated based on premade templates specific to each target language. Each schema is specified using an XML file.
 
 ## Setup
 ``` bash
@@ -13,10 +22,22 @@ deactivate
 
 ## Running
 ``` bash
-python script.py
+$ python script.py example_schemas/final_demo.schemafile templates/c_server.jinja output/c_server.c
 ```
 
-The above script should print the parsed xml file as a python dictionary.
+The above script should output a C server in the `output/` dir.
+To generate the associated header use...
+
+``` bash
+$ python script.py example_schemas/final_demo.schemafile templates/c_server_h.jinja output/c_server.h
+```
+
+Then try python or JS using the following...
+
+``` bash
+$ python script.py example_schemas/final_demo.schemafile templates/python_client.jinja output/python_client.py
+$ python script.py example_schemas/final_demo.schemafile templates/js_client.jinja output/js_client.js
+```
 
 ## Contributing
 Before making code changes decide which ticket you are working on. Then create a branch with your name, the project name, and the corresponding ticket number.
@@ -61,3 +82,6 @@ branch 'jackson/update-schemafile' set up to track 'origin/jackson/update-schema
 ```
 
 From there create a helpful description of what changed in your pr, as well as linking to the issue in your PR.
+
+## License 
+[license link](LICENSE.txt)
